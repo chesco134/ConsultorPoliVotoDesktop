@@ -6,18 +6,18 @@
 
 package com.polivoto.threading;
 
-import com.polivoto.logica.ConstruirDatos;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import org.json.JSONException;
-import org.json.JSONObject;
-import com.polivoto.networking.SoapClient;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.xml.soap.SOAPException;
+import org.inspira.polivoto.AccionesConsultor;
+import org.json.JSONException;
+import org.json.JSONObject;
+import com.polivoto.networking.SoapClient;
 
 /**
  *
@@ -25,10 +25,17 @@ import javax.xml.soap.SOAPException;
  */
 public class IncommingRequestHandler extends Thread{
     
+    private AccionesConsultor accionesConsultor;
+    private ServerSocket server;
+
+    public void setAccionesConsultor(AccionesConsultor accionesConsultor) {
+        this.accionesConsultor = accionesConsultor;
+    }
+    
     @Override
     public void run(){
         try{
-            ServerSocket server = new ServerSocket(5010);
+            server = new ServerSocket(5010);
             while(true){
                 Socket socket = server.accept();
                 DataInputStream entrada = new DataInputStream(socket.getInputStream());
@@ -44,7 +51,7 @@ public class IncommingRequestHandler extends Thread{
                         resp = sc.main();
                         break;
                     case 2: // Remote server needs to check out the status of one boleta locally...
-                        resp = ConstruirDatos.getAccionesConsultor().consultaBoletaRemota(json.getString("boleta"));
+                        resp = accionesConsultor.consultaBoletaRemota(json.getString("boleta"));
                         break;
                     default:
                 }
@@ -57,6 +64,14 @@ public class IncommingRequestHandler extends Thread{
             e.printStackTrace();
         } catch (SOAPException ex) {
             Logger.getLogger(IncommingRequestHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public void terminarConexion(){
+        try{
+            server.close();
+        }catch(IOException e){
+            e.printStackTrace();
         }
     }
 }

@@ -5,13 +5,14 @@
  */
 package com.polivoto.main;
 
+import com.polivoto.vistas.Acceso;
+
 /**
  *
  * @author azaraf
  */
 public class Main {
     public static void main (String[] args){
-        BackBone backBone = new BackBone();
-        backBone.iniciarSesion();
+        new Acceso().iniciar();
     }
 }

@@ -25,27 +25,22 @@ public class IOHandler {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int toRead;
         byte[] block = new byte[64];
-        ByteArrayOutputStream temp;
         // Anticipa cuantos bytes mandará el emisor, para luego leer por bloques antes de
         // esperar a que la nueva trama llegue.
         while ((toRead = readInt()) > 0) {
-            temp = new ByteArrayOutputStream();
-            System.out.println("Laugh " + toRead);
             int times = toRead/block.length;
             for ( int i=0; i<times; i++ ) {
                 entrada.read(block);
-                temp.write(block,0,block.length);
+                baos.write(block,0,block.length);
             }
             int remaining = toRead - times*block.length;
             if( remaining > 0 ){
                 entrada.read(block);
-                temp.write(block, 0, remaining);
+                baos.write(block, 0, remaining);
             }
-            baos.write(temp.toByteArray(), 0, temp.size());
-            System.out.println("Llevamos: " + baos.size() + " bytes.");
             writeInt(1);
         }
-        System.out.println("Done reading " + baos.size() + " bytes");
+        System.out.println("Done reading " + baos.size() + " bytes.");
         chunk = baos.toByteArray();
         baos.close();
         return chunk;
@@ -57,17 +52,13 @@ public class IOHandler {
         for( int i=0; i<times; i++ ){
             writeInt(rate);
             salida.write(message, i * rate, rate);
-            System.out.println("Sent something");
             readInt();
-            System.out.println("Confirmed");
         }
         int remaining = message.length - times*rate;
         if(remaining > 0){
             writeInt(remaining);
             salida.write(message,times*rate,remaining);
-            System.out.println("Sent something");
             readInt();
-            System.out.println("Confirmed");
         }
         writeInt(0);
     }

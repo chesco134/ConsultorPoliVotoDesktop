@@ -5,19 +5,34 @@
  */
 package com.polivoto.vistas;
 
-import com.polivoto.logica.ConstruirDatos;
 import com.polivoto.logica.Cronometro;
 import com.polivoto.logica.RecibirVotos;
-import com.polivoto.main.BackBone;
 import com.polivoto.networking.IOHandler;
+import com.polivoto.threading.IncommingRequestHandler;
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javafx.scene.layout.BorderPane;
+import javax.swing.BoxLayout;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.Timer;
+import org.inspira.polivoto.AccionesConsultor;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -26,78 +41,124 @@ import org.json.JSONObject;
  *
  * @author azaraf
  */
-public class AnalistaD extends JFrame {
-    private final BackBone padre;
+public class AnalistaLocal extends JFrame {
+
+    private final CardLayout cardLayout = new CardLayout();
+    private final AccionesConsultor accionesConsultor;
+    private IncommingRequestHandler incommingRequestHandler;
     private String nombreStartUp;
-    private CardLayout cardLayout = new CardLayout();
     boolean progreso = true;
-    Cronometro cronometro;
-    RecibirVotos escuchar;
-    int votos = 0;
-    Integer poblacion;
+    private Cronometro cronometro;
+    private RecibirVotos escuchar;
+    private int votos = 0;
+    private JSONObject json;
+    private Integer poblacion;
+    private String tituloVotacion;
+    private List<Consultor> listaConsultores = new ArrayList<>();
+
     /**
      * Creates new form AnalistaD
+     *
+     * @param accionesConsultor
      */
-    public AnalistaD(BackBone padre) {
-        this.padre = padre;
+    public AnalistaLocal(AccionesConsultor accionesConsultor) {
+        this.accionesConsultor = accionesConsultor;
         initComponents();
-        setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
-        
-        // Obtener el nombre de la zona
-        nombreStartUp = ConstruirDatos.getNombreStartUp();
-        encabezado.setText("<html><div align=\"center\"" + nombreStartUp + "</html>");
-        panelProceso.setLayout(cardLayout);
-        panelProceso.add(pnl_esperar, "esperar");
-        panelProceso.add(pnl_prog, "proceso");
-        panelProceso.add(pnl_consultar, "consultar");
-        cardLayout.show(panelProceso, "proceso");
-        
-    }
+        jPanel2.setLayout(new GridLayout(1, (accionesConsultor.getTotalDePreguntas() + 1)));
 
-    public void beginListening() {
+        setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
+
+        panelVotando.setVisible(true);
+        Panel3.setVisible(false);
+        try {
+            json = new JSONObject(this.accionesConsultor.consultaParametrosIniciales());
+            cronometro = new Cronometro(lblhrs, lblmin, lblseg, json.getLong("tiempo_final"));
+            cronometro.iniciarCronometro();
+            escuchar = new RecibirVotos();
+            poblacion = json.getInt("poblacion");
+            votos = json.getInt("votos");
+            nombreStartUp = json.getString("lugar");
+            System.out.println("" + json.toString());
+        } catch (JSONException ignore) {
+            ignore.printStackTrace();
+        }
+        // Obtener el nombre de la zona
+        panelMain.setLayout(cardLayout);
+        panelMain.add(Panel1, "1");
+        panelMain.add(Panel2, "2");
+        panelMain.add(Panel3, "3");
+        cardLayout.show(panelMain, "1");
+        System.out.println("Startup dada: " + json.toString());
+        escuchar.iniciarEscucha(votos, poblacion, lblvotos_totales, lblporcentaje, pnlgrafica, Panel3, Panel1);
         Service service = new Service();
         service.start();
+//        timerMarquesina = new Timer(250, new marquesina());
+//        timerMarquesina.start();
+        setPreguntasText();
     }
-    
-    private class Service extends Thread{
-        private IOHandler ioh;
+
+    public void setIncommingRequestHandler(IncommingRequestHandler incommingRequestHandler) {
+        this.incommingRequestHandler = incommingRequestHandler;
+    }
+
+    private void setPreguntasText() {
+        JSONArray js = accionesConsultor.getPreguntas();
+        for (int i = 0; i < js.length(); i++) {
+            try {
+                JPanel panel = new JPanel(new GridLayout(0, 1));
+                panel.setBackground(new Color(255, 255, 255));
+                jPanel2.add(panel);
+                JLabel lab1 = new JLabel("Pregunta " + (i + 1) + ": " + ((JSONObject) js.get(i)).getString("pregunta"), JLabel.LEFT);
+                lab1.setFont(new Font("Roboto", 1, 18));
+                lab1.setForeground(new Color(134, 36, 31));
+                panel.add(lab1);
+                JSONArray jarr = ((JSONObject) js.get(i)).getJSONArray("opciones");
+                for (int j = 0; j < jarr.length(); j++) {
+                    JLabel lab2 = new JLabel("Opción " + (j + 1) + ": " + jarr.getString(j), JLabel.LEFT);
+                    lab2.setFont(new Font("Roboto", 1, 15));
+                    lab2.setForeground(new Color(0, 0, 0));
+                    panel.add(lab2);
+                }
+
+            } catch (JSONException ex) {
+                Logger.getLogger(AnalistaLocal.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+
+    private class Service extends Thread {
+
+        private IOHandler ioHandler;
+
         @Override
         public void run() {
             try {
                 ServerSocket server = new ServerSocket(5004);
-                JSONObject json;
-                json = new JSONObject(ConstruirDatos.getAccionesConsultor().consultaParametrosIniciales());
-                cronometro = new Cronometro(lblhrs, lblmin, lblseg, json.getInt("horas"), json.getInt("minutos"), json.getInt("segundos"), cardLayout, panelProceso);
-                cronometro.iniciarCronometro();
-                escuchar = new RecibirVotos();
-                poblacion = json.getInt("poblacion");
-                System.out.println("Startup dada: " + json.toString());
-                escuchar.iniciarEscucha(votos - 1, poblacion, lblvotos_totales, lblporcentaje, pnlgrafica, pnl_consultar, pnl_esperar);
-
                 /*
                  * Inicia cronómetro
                  */
-                while (RecibirVotos.RECIBIENDO) {
+                while (escuchar.isRecibiendo()) {
                     Socket socket = server.accept(); // We should perform some kind of validation...
-                    ioh = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
-                    json = new JSONObject(new String(ioh.handleIncommingMessage()));
-                    ioh.close();
+                    ioHandler = new IOHandler(
+                            new DataInputStream(socket.getInputStream()),
+                            new DataOutputStream(socket.getOutputStream())
+                    );
+                    json = new JSONObject(new String(ioHandler.handleIncommingMessage()));
+                    ioHandler.close();
                     socket.close();
                     switch (json.getInt("action")) {
                         case 1:
                             System.out.println("Voto nuevo");
-                            escuchar.actualizarConteo();
+                            escuchar.actualizarConteo(true);
                             break;
                         case 2:
                             System.out.println("Proceso Finalizado");
-                            escuchar.pnl_consulta.setVisible(true);
-                            escuchar.pnl_espera.setVisible(false);
-                            RecibirVotos.RECIBIENDO = false;
-                            break;
-                        case 3:
-                            poblacion = json.getInt("poblacion");
-                            escuchar.votos--;
-                            escuchar.actualizarConteo();
+                            cardLayout.show(panelMain, "3");
+                            escuchar.setRecibiendo(false);
+                            for (int i = 0; i < accionesConsultor.getPreguntas().length(); i++) {
+                                Consultor consultor = new Consultor(i, accionesConsultor);
+                                listaConsultores.add(consultor);
+                            }
                             break;
                     }
                     socket.close();
@@ -107,6 +168,7 @@ public class AnalistaD extends JFrame {
             }
         }
     }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -117,28 +179,27 @@ public class AnalistaD extends JFrame {
     private void initComponents() {
         java.awt.GridBagConstraints gridBagConstraints;
 
-        pnl_consultar = new javax.swing.JPanel();
+        Panel3 = new javax.swing.JPanel();
         jLabel5 = new javax.swing.JLabel();
         jLabel1 = new javax.swing.JLabel();
-        pnl_esperar = new javax.swing.JPanel();
+        Panel1 = new javax.swing.JPanel();
         lblmsj_esperando = new javax.swing.JLabel();
         lbl_cargando = new javax.swing.JLabel();
-        pnl_prog = new javax.swing.JPanel();
+        Panel2 = new javax.swing.JPanel();
         lblmsj_esperando1 = new javax.swing.JLabel();
         lbl_cargando1 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
-        jLabel2 = new javax.swing.JLabel();
         panelPrincipal = new javax.swing.JPanel();
         panelVotosTotales = new javax.swing.JPanel();
         lbl_votos_totales = new javax.swing.JLabel();
         jPanel7 = new javax.swing.JPanel();
         lblvotos_totales = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
-        pnl_vota_prog = new javax.swing.JPanel();
-        panelProceso = new javax.swing.JPanel();
+        panelVotando = new javax.swing.JPanel();
+        panelMain = new javax.swing.JPanel();
         jLabel8 = new javax.swing.JLabel();
         panelEstado = new javax.swing.JPanel();
         encabezado = new javax.swing.JLabel();
+        jPanel2 = new javax.swing.JPanel();
         panelPorcentaje = new javax.swing.JPanel();
         lbl_porcentaje = new javax.swing.JLabel();
         jPanel8 = new javax.swing.JPanel();
@@ -148,15 +209,12 @@ public class AnalistaD extends JFrame {
         lbl_tiemporest = new javax.swing.JLabel();
         jPanel9 = new javax.swing.JPanel();
         lblhrs = new javax.swing.JLabel();
-        jLabel7 = new javax.swing.JLabel();
         lblmin = new javax.swing.JLabel();
-        jLabel9 = new javax.swing.JLabel();
         lblseg = new javax.swing.JLabel();
-        jLabel11 = new javax.swing.JLabel();
         lblpuntos = new javax.swing.JLabel();
         lblpuntos1 = new javax.swing.JLabel();
 
-        pnl_consultar.setBackground(new java.awt.Color(255, 255, 255));
+        Panel3.setBackground(new java.awt.Color(255, 255, 255));
 
         jLabel5.setFont(new java.awt.Font("Roboto", 0, 18)); // NOI18N
         jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -181,19 +239,19 @@ public class AnalistaD extends JFrame {
             }
         });
 
-        javax.swing.GroupLayout pnl_consultarLayout = new javax.swing.GroupLayout(pnl_consultar);
-        pnl_consultar.setLayout(pnl_consultarLayout);
-        pnl_consultarLayout.setHorizontalGroup(
-            pnl_consultarLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout Panel3Layout = new javax.swing.GroupLayout(Panel3);
+        Panel3.setLayout(Panel3Layout);
+        Panel3Layout.setHorizontalGroup(
+            Panel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, 696, Short.MAX_VALUE)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnl_consultarLayout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, Panel3Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel1)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-        pnl_consultarLayout.setVerticalGroup(
-            pnl_consultarLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(pnl_consultarLayout.createSequentialGroup()
+        Panel3Layout.setVerticalGroup(
+            Panel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(Panel3Layout.createSequentialGroup()
                 .addGap(110, 110, 110)
                 .addComponent(jLabel5)
                 .addGap(43, 43, 43)
@@ -201,27 +259,27 @@ public class AnalistaD extends JFrame {
                 .addContainerGap(40, Short.MAX_VALUE))
         );
 
-        pnl_esperar.setBackground(new java.awt.Color(255, 255, 255));
+        Panel1.setBackground(new java.awt.Color(255, 255, 255));
 
         lblmsj_esperando.setFont(new java.awt.Font("Roboto", 0, 18)); // NOI18N
         lblmsj_esperando.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        lblmsj_esperando.setText("<html><div align=\"center\">VOTACION EN CURSO</html>");
+        lblmsj_esperando.setText("<html><div align=\"center\">CÓMO VOTAR</html>");
 
         lbl_cargando.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/participando.gif"))); // NOI18N
 
-        javax.swing.GroupLayout pnl_esperarLayout = new javax.swing.GroupLayout(pnl_esperar);
-        pnl_esperar.setLayout(pnl_esperarLayout);
-        pnl_esperarLayout.setHorizontalGroup(
-            pnl_esperarLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout Panel1Layout = new javax.swing.GroupLayout(Panel1);
+        Panel1.setLayout(Panel1Layout);
+        Panel1Layout.setHorizontalGroup(
+            Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(lblmsj_esperando)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnl_esperarLayout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, Panel1Layout.createSequentialGroup()
                 .addContainerGap(70, Short.MAX_VALUE)
                 .addComponent(lbl_cargando)
                 .addContainerGap(70, Short.MAX_VALUE))
         );
-        pnl_esperarLayout.setVerticalGroup(
-            pnl_esperarLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(pnl_esperarLayout.createSequentialGroup()
+        Panel1Layout.setVerticalGroup(
+            Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(Panel1Layout.createSequentialGroup()
                 .addGap(20, 20, 20)
                 .addComponent(lblmsj_esperando, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
@@ -229,7 +287,7 @@ public class AnalistaD extends JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        pnl_prog.setBackground(new java.awt.Color(255, 255, 255));
+        Panel2.setBackground(new java.awt.Color(255, 255, 255));
 
         lblmsj_esperando1.setFont(new java.awt.Font("Roboto", 0, 18)); // NOI18N
         lblmsj_esperando1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -237,19 +295,19 @@ public class AnalistaD extends JFrame {
 
         lbl_cargando1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/espera.gif"))); // NOI18N
 
-        javax.swing.GroupLayout pnl_progLayout = new javax.swing.GroupLayout(pnl_prog);
-        pnl_prog.setLayout(pnl_progLayout);
-        pnl_progLayout.setHorizontalGroup(
-            pnl_progLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout Panel2Layout = new javax.swing.GroupLayout(Panel2);
+        Panel2.setLayout(Panel2Layout);
+        Panel2Layout.setHorizontalGroup(
+            Panel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(lblmsj_esperando1, javax.swing.GroupLayout.DEFAULT_SIZE, 620, Short.MAX_VALUE)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnl_progLayout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, Panel2Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(lbl_cargando1)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-        pnl_progLayout.setVerticalGroup(
-            pnl_progLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(pnl_progLayout.createSequentialGroup()
+        Panel2Layout.setVerticalGroup(
+            Panel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(Panel2Layout.createSequentialGroup()
                 .addGap(20, 20, 20)
                 .addComponent(lblmsj_esperando1, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
@@ -258,27 +316,20 @@ public class AnalistaD extends JFrame {
         );
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("VOTACIONES EN CURSO");
 
         jPanel1.setBackground(new java.awt.Color(134, 36, 31));
         jPanel1.setPreferredSize(new java.awt.Dimension(846, 60));
-
-        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/logo-pequeno.png"))); // NOI18N
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
+            .addGap(0, 0, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+            .addGap(0, 60, Short.MAX_VALUE)
         );
 
         panelPrincipal.setLayout(new java.awt.GridBagLayout());
@@ -295,9 +346,6 @@ public class AnalistaD extends JFrame {
         lblvotos_totales.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblvotos_totales.setText("0");
 
-        jLabel6.setFont(new java.awt.Font("Roboto", 1, 40)); // NOI18N
-        jLabel6.setText("VOTOS");
-
         javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
         jPanel7.setLayout(jPanel7Layout);
         jPanel7Layout.setHorizontalGroup(
@@ -305,21 +353,14 @@ public class AnalistaD extends JFrame {
             .addGroup(jPanel7Layout.createSequentialGroup()
                 .addGap(10, 10, 10)
                 .addComponent(lblvotos_totales, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(30, 30, 30)
-                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(10, Short.MAX_VALUE))
+                .addContainerGap(206, Short.MAX_VALUE))
         );
         jPanel7Layout.setVerticalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel7Layout.createSequentialGroup()
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel7Layout.createSequentialGroup()
-                        .addGap(20, 20, 20)
-                        .addComponent(lblvotos_totales, javax.swing.GroupLayout.PREFERRED_SIZE, 96, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel7Layout.createSequentialGroup()
-                        .addGap(50, 50, 50)
-                        .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(54, Short.MAX_VALUE))
+                .addGap(20, 20, 20)
+                .addComponent(lblvotos_totales, javax.swing.GroupLayout.PREFERRED_SIZE, 96, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout panelVotosTotalesLayout = new javax.swing.GroupLayout(panelVotosTotales);
@@ -332,7 +373,7 @@ public class AnalistaD extends JFrame {
                     .addComponent(jPanel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(panelVotosTotalesLayout.createSequentialGroup()
                         .addComponent(lbl_votos_totales)
-                        .addGap(0, 373, Short.MAX_VALUE)))
+                        .addGap(0, 389, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         panelVotosTotalesLayout.setVerticalGroup(
@@ -347,36 +388,35 @@ public class AnalistaD extends JFrame {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weighty = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         panelPrincipal.add(panelVotosTotales, gridBagConstraints);
 
-        pnl_vota_prog.setBackground(new java.awt.Color(255, 255, 255));
-        pnl_vota_prog.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 0, 0), 3, true));
+        panelVotando.setBackground(new java.awt.Color(255, 255, 255));
+        panelVotando.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 0, 0), 3, true));
 
-        panelProceso.setBackground(new java.awt.Color(255, 255, 255));
+        panelMain.setBackground(new java.awt.Color(255, 255, 255));
 
-        javax.swing.GroupLayout panelProcesoLayout = new javax.swing.GroupLayout(panelProceso);
-        panelProceso.setLayout(panelProcesoLayout);
-        panelProcesoLayout.setHorizontalGroup(
-            panelProcesoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 734, Short.MAX_VALUE)
+        javax.swing.GroupLayout panelMainLayout = new javax.swing.GroupLayout(panelMain);
+        panelMain.setLayout(panelMainLayout);
+        panelMainLayout.setHorizontalGroup(
+            panelMainLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 794, Short.MAX_VALUE)
         );
-        panelProcesoLayout.setVerticalGroup(
-            panelProcesoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 485, Short.MAX_VALUE)
+        panelMainLayout.setVerticalGroup(
+            panelMainLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 359, Short.MAX_VALUE)
         );
 
-        jLabel8.setFont(new java.awt.Font("Arial", 1, 14)); // NOI18N
-        jLabel8.setText("INFORMACIÓN:");
+        jLabel8.setFont(new java.awt.Font("Roboto", 1, 14)); // NOI18N
+        jLabel8.setText("Preguntas");
 
         panelEstado.setBackground(new java.awt.Color(255, 255, 255));
 
         encabezado.setBackground(new java.awt.Color(255, 255, 255));
-        encabezado.setFont(new java.awt.Font("Calibri", 0, 30)); // NOI18N
-        encabezado.setForeground(new java.awt.Color(102, 0, 0));
+        encabezado.setFont(new java.awt.Font("Roboto", 1, 30)); // NOI18N
+        encabezado.setForeground(new java.awt.Color(134, 36, 31));
         encabezado.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        encabezado.setText("VOTACIONES EN PROGRESO");
+        encabezado.setText("VOTACIONES EN PROGRESO          ");
 
         javax.swing.GroupLayout panelEstadoLayout = new javax.swing.GroupLayout(panelEstado);
         panelEstado.setLayout(panelEstadoLayout);
@@ -389,31 +429,49 @@ public class AnalistaD extends JFrame {
             .addComponent(encabezado, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
-        javax.swing.GroupLayout pnl_vota_progLayout = new javax.swing.GroupLayout(pnl_vota_prog);
-        pnl_vota_prog.setLayout(pnl_vota_progLayout);
-        pnl_vota_progLayout.setHorizontalGroup(
-            pnl_vota_progLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(pnl_vota_progLayout.createSequentialGroup()
+        jPanel2.setBackground(new java.awt.Color(255, 255, 255));
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 97, Short.MAX_VALUE)
+        );
+
+        javax.swing.GroupLayout panelVotandoLayout = new javax.swing.GroupLayout(panelVotando);
+        panelVotando.setLayout(panelVotandoLayout);
+        panelVotandoLayout.setHorizontalGroup(
+            panelVotandoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(panelVotandoLayout.createSequentialGroup()
                 .addGap(7, 7, 7)
                 .addComponent(panelEstado, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(10, 10, 10))
-            .addGroup(pnl_vota_progLayout.createSequentialGroup()
+            .addGroup(panelVotandoLayout.createSequentialGroup()
+                .addComponent(panelMain, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+            .addGroup(panelVotandoLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel8)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(pnl_vota_progLayout.createSequentialGroup()
-                .addComponent(panelProceso, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, panelVotandoLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-        pnl_vota_progLayout.setVerticalGroup(
-            pnl_vota_progLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(pnl_vota_progLayout.createSequentialGroup()
+        panelVotandoLayout.setVerticalGroup(
+            panelVotandoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(panelVotandoLayout.createSequentialGroup()
                 .addGap(7, 7, 7)
                 .addComponent(panelEstado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(5, 5, 5)
                 .addComponent(jLabel8)
-                .addGap(18, 18, 18)
-                .addComponent(panelProceso, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(panelMain, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -425,15 +483,17 @@ public class AnalistaD extends JFrame {
         gridBagConstraints.weightx = 0.1;
         gridBagConstraints.weighty = 0.1;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
-        panelPrincipal.add(pnl_vota_prog, gridBagConstraints);
+        panelPrincipal.add(panelVotando, gridBagConstraints);
 
         panelPorcentaje.setBackground(new java.awt.Color(255, 255, 255));
         panelPorcentaje.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 0, 0), 3, true));
+        panelPorcentaje.setMaximumSize(new java.awt.Dimension(589, 205));
 
         lbl_porcentaje.setFont(new java.awt.Font("Roboto", 1, 20)); // NOI18N
         lbl_porcentaje.setText("PORCENTAJE DE PARTICIPACIÓN:");
 
         jPanel8.setBackground(new java.awt.Color(255, 255, 255));
+        jPanel8.setMaximumSize(new java.awt.Dimension(564, 155));
 
         lblporcentaje.setBackground(new java.awt.Color(255, 255, 255));
         lblporcentaje.setFont(new java.awt.Font("Roboto", 1, 80)); // NOI18N
@@ -441,16 +501,17 @@ public class AnalistaD extends JFrame {
         lblporcentaje.setText("0%");
 
         pnlgrafica.setEnabled(false);
+        pnlgrafica.setMaximumSize(new java.awt.Dimension(161, 131));
 
         javax.swing.GroupLayout pnlgraficaLayout = new javax.swing.GroupLayout(pnlgrafica);
         pnlgrafica.setLayout(pnlgraficaLayout);
         pnlgraficaLayout.setHorizontalGroup(
             pnlgraficaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
+            .addGap(0, 161, Short.MAX_VALUE)
         );
         pnlgraficaLayout.setVerticalGroup(
             pnlgraficaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 180, Short.MAX_VALUE)
+            .addGap(0, 131, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
@@ -459,19 +520,18 @@ public class AnalistaD extends JFrame {
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel8Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(lblporcentaje, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(pnlgrafica, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(lblporcentaje, javax.swing.GroupLayout.DEFAULT_SIZE, 293, Short.MAX_VALUE)
+                .addGap(34, 34, 34)
+                .addComponent(pnlgrafica, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(22, 22, 22))
         );
         jPanel8Layout.setVerticalGroup(
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel8Layout.createSequentialGroup()
-                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addContainerGap()
+                .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(pnlgrafica, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(jPanel8Layout.createSequentialGroup()
-                        .addGap(33, 33, 33)
-                        .addComponent(lblporcentaje, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(lblporcentaje, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -485,7 +545,7 @@ public class AnalistaD extends JFrame {
                     .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(panelPorcentajeLayout.createSequentialGroup()
                         .addComponent(lbl_porcentaje)
-                        .addGap(0, 188, Short.MAX_VALUE)))
+                        .addGap(0, 204, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         panelPorcentajeLayout.setVerticalGroup(
@@ -496,7 +556,7 @@ public class AnalistaD extends JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(panelPorcentajeLayout.createSequentialGroup()
                 .addGap(32, 32, 32)
-                .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, 162, Short.MAX_VALUE)
+                .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -509,6 +569,8 @@ public class AnalistaD extends JFrame {
 
         panelTimer.setBackground(new java.awt.Color(255, 255, 255));
         panelTimer.setBorder(new javax.swing.border.LineBorder(new java.awt.Color(102, 0, 0), 3, true));
+        panelTimer.setMaximumSize(new java.awt.Dimension(535, 185));
+        panelTimer.setMinimumSize(new java.awt.Dimension(535, 185));
 
         lbl_tiemporest.setFont(new java.awt.Font("Roboto", 1, 18)); // NOI18N
         lbl_tiemporest.setText("TIEMPO RESTANTE:");
@@ -523,13 +585,6 @@ public class AnalistaD extends JFrame {
         lblhrs.setOpaque(true);
         jPanel9.add(lblhrs, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 60, 140, 80));
 
-        jLabel7.setBackground(new java.awt.Color(255, 255, 255));
-        jLabel7.setFont(new java.awt.Font("Roboto", 1, 36)); // NOI18N
-        jLabel7.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel7.setText("Hrs");
-        jLabel7.setOpaque(true);
-        jPanel9.add(jLabel7, new org.netbeans.lib.awtextra.AbsoluteConstraints(100, 10, 90, 40));
-
         lblmin.setBackground(new java.awt.Color(255, 255, 255));
         lblmin.setFont(new java.awt.Font("Roboto", 1, 90)); // NOI18N
         lblmin.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
@@ -537,26 +592,12 @@ public class AnalistaD extends JFrame {
         lblmin.setOpaque(true);
         jPanel9.add(lblmin, new org.netbeans.lib.awtextra.AbsoluteConstraints(220, 60, 130, 80));
 
-        jLabel9.setBackground(new java.awt.Color(255, 255, 255));
-        jLabel9.setFont(new java.awt.Font("Roboto", 1, 36)); // NOI18N
-        jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel9.setText("seg");
-        jLabel9.setOpaque(true);
-        jPanel9.add(jLabel9, new org.netbeans.lib.awtextra.AbsoluteConstraints(400, 0, 100, 60));
-
         lblseg.setBackground(new java.awt.Color(255, 255, 255));
         lblseg.setFont(new java.awt.Font("Roboto", 1, 90)); // NOI18N
         lblseg.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblseg.setText("00");
         lblseg.setOpaque(true);
-        jPanel9.add(lblseg, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 60, 120, 80));
-
-        jLabel11.setBackground(new java.awt.Color(255, 255, 255));
-        jLabel11.setFont(new java.awt.Font("Roboto", 1, 36)); // NOI18N
-        jLabel11.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel11.setText("min");
-        jLabel11.setOpaque(true);
-        jPanel9.add(jLabel11, new org.netbeans.lib.awtextra.AbsoluteConstraints(250, 10, 100, 40));
+        jPanel9.add(lblseg, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 60, 130, 80));
 
         lblpuntos.setBackground(new java.awt.Color(255, 255, 255));
         lblpuntos.setFont(new java.awt.Font("Roboto", 1, 90)); // NOI18N
@@ -607,7 +648,7 @@ public class AnalistaD extends JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1285, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1361, Short.MAX_VALUE)
             .addComponent(panelPrincipal, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
@@ -623,34 +664,36 @@ public class AnalistaD extends JFrame {
 
     private void jLabel1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MouseClicked
         //Abrir siguiente ventana
-        padre.iniciarConsultor();
+        for (int i = 0; i < listaConsultores.size(); i++) {
+            listaConsultores.get(i).iniciar();
+        }
         setVisible(false);
     }//GEN-LAST:event_jLabel1MouseClicked
 
     private void jLabel1MouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MouseEntered
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/boton-consultar2.png"))); // NOI18N
-        
+
     }//GEN-LAST:event_jLabel1MouseEntered
 
     private void jLabel1MouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MouseExited
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/boton-consultar1.png"))); // NOI18N
-        
+
     }//GEN-LAST:event_jLabel1MouseExited
 
     private void jLabel1MousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MousePressed
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/boton-consultar3.png"))); // NOI18N
-        
+
     }//GEN-LAST:event_jLabel1MousePressed
 
     private void jLabel1MouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MouseReleased
-jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/boton-consultar1.png"))); // NOI18N
-                // TODO add your handling code here:
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/boton-consultar1.png"))); // NOI18N
+        // TODO add your handling code here:
     }//GEN-LAST:event_jLabel1MouseReleased
 
     /**
      * @param args the command line arguments
      */
-    public void iniciar() {
+    public void init() {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -661,36 +704,47 @@ jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/
                 if ("Nimbus".equals(info.getName())) {
                     javax.swing.UIManager.setLookAndFeel(info.getClassName());
                     break;
+
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(AnalistaD.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(AnalistaLocal.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(AnalistaD.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(AnalistaLocal.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(AnalistaD.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(AnalistaLocal.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(AnalistaD.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(AnalistaLocal.class
+                    .getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(AnalistaLocal.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
 
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> {
-            setVisible(true);
-        });
+        setVisible(true);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JPanel Panel1;
+    private javax.swing.JPanel Panel2;
+    private javax.swing.JPanel Panel3;
     private javax.swing.JLabel encabezado;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
@@ -709,15 +763,24 @@ jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/
     private javax.swing.JLabel lblseg;
     private javax.swing.JLabel lblvotos_totales;
     private javax.swing.JPanel panelEstado;
+    private javax.swing.JPanel panelMain;
     private javax.swing.JPanel panelPorcentaje;
     private javax.swing.JPanel panelPrincipal;
-    private javax.swing.JPanel panelProceso;
     private javax.swing.JPanel panelTimer;
+    private javax.swing.JPanel panelVotando;
     private javax.swing.JPanel panelVotosTotales;
-    private javax.swing.JPanel pnl_consultar;
-    private javax.swing.JPanel pnl_esperar;
-    private javax.swing.JPanel pnl_prog;
-    private javax.swing.JPanel pnl_vota_prog;
     private javax.swing.JPanel pnlgrafica;
     // End of variables declaration//GEN-END:variables
+    private Timer timerMarquesina;
+
+    class marquesina implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String texto = encabezado.getText().substring(1) + encabezado.getText().substring(0, 1);
+            encabezado.setText(texto);
+        }
+
+    }
+
 }

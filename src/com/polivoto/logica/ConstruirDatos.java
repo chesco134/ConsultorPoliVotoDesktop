@@ -5,7 +5,6 @@
  */
 package com.polivoto.logica;
 
-import com.polivoto.entidades.AccionesConsultor;
 import com.polivoto.threading.IncommingRequestHandler;
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -16,6 +15,7 @@ import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import org.inspira.polivoto.AccionesConsultor;
 import org.json.JSONException;
 
 /**

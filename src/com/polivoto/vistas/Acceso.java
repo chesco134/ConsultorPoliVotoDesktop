@@ -5,16 +5,10 @@
  */
 package com.polivoto.vistas;
 
-import com.polivoto.entidades.AccionesConsultor;
-import com.polivoto.logica.ConstruirDatos;
-import com.polivoto.main.BackBone;
-import java.awt.Desktop;
 import java.io.IOException;
-import java.net.URL;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.BadPaddingException;
@@ -23,8 +17,9 @@ import javax.crypto.NoSuchPaddingException;
 import javax.swing.ImageIcon;
 import org.json.JSONException;
 import com.polivoto.threading.IncommingRequestHandler;
-import java.util.Arrays;
+import com.polivoto.vistas.acciones.Cargando;
 import javax.swing.JOptionPane;
+import org.inspira.polivoto.AccionesConsultor;
 import org.jdesktop.swingx.prompt.PromptSupport;
 
 /**
@@ -33,16 +28,15 @@ import org.jdesktop.swingx.prompt.PromptSupport;
  */
 public class Acceso extends javax.swing.JFrame {
 
-    public static AccionesConsultor AC;
-    private final BackBone padre;
+    private AccionesConsultor accionesConsultor;
+    private IncommingRequestHandler incommingRequestHandler;
+
     /**
      * Creates new form Results
      */
-    
-    public Acceso(BackBone padre) {
-        this.padre = padre;
+    public Acceso() {
         initComponents();
-        PromptSupport.setPrompt("Usuario", usrTextField);
+        PromptSupport.setPrompt("Direccion IP", usrTextField);
         PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, usrTextField);
         PromptSupport.setPrompt("Contraseña", pwdTextField);
         PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, pwdTextField);
@@ -65,11 +59,6 @@ public class Acceso extends javax.swing.JFrame {
         usrTextField = new javax.swing.JTextField();
         pwdTextField = new javax.swing.JPasswordField();
         boton = new javax.swing.JLabel();
-        jMenuBar = new javax.swing.JMenuBar();
-        jMenuPoliVoto = new javax.swing.JMenu();
-        jmItemSalir = new javax.swing.JMenuItem();
-        jMenuAyuda = new javax.swing.JMenu();
-        jmContacto = new javax.swing.JMenuItem();
 
         setLocationRelativeTo(null);
         jContacto.setTitle("PoliVoto Electrónico");
@@ -80,7 +69,7 @@ public class Acceso extends javax.swing.JFrame {
         jLabel3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/logo.png"))); // NOI18N
 
         jLabel4.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel4.setText("<html> <h2>PoliVoto Electrónico &copy 2015</h2>  <p>Copia exclusiva para la Unidad Profesional <p>Interdisciplinaria en Ingenierías y Ciencias <p>Administrativas del Instituto Politécnico <p>Nacional. <p>Contacto y ayuda:</p>  <p>David A. Vargas: +52 (55) 2989 2764  <p>Juan Capiz: +52 (55) 1379 0281  <p>Alfonso De La Rosa: +52 (55) 4892 5376 <p>correo: contacto@votacionesipn.com</html>");
+        jLabel4.setText("<html> <h2>PoliVoto Electrónico &copy</h2>  <p>Copia exclusiva para la Unidad Profesional <p>Interdisciplinaria en Ingeniería y Tecnologías <p>Avanzadas del Instituto Politécnico <p>Nacional. <p>Contacto y ayuda:</p>  <p>David A. Vargas: +52 (55) 2989 2764  <p>Juan Capiz: +52 (55) 1379 0281  <p>Alfonso De La Rosa: +52 (55) 4892 5376 <p>correo: contacto@votacionesipn.com</html>");
 
         javax.swing.GroupLayout jContactoLayout = new javax.swing.GroupLayout(jContacto.getContentPane());
         jContacto.getContentPane().setLayout(jContactoLayout);
@@ -103,31 +92,40 @@ public class Acceso extends javax.swing.JFrame {
                         .addGap(44, 44, 44)
                         .addComponent(jLabel3)
                         .addGap(0, 0, Short.MAX_VALUE)))
-                .addGap(63, 63, 63))
+                .addContainerGap())
         );
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Ingresar");
-        setFocusable(false);
         setIconImage(new ImageIcon(getClass().getResource("/com/polivoto/imagenes/icono.png")).getImage());
         setMinimumSize(new java.awt.Dimension(400, 410));
-        setPreferredSize(new java.awt.Dimension(400, 500));
         setResizable(false);
-        setSize(new java.awt.Dimension(400, 500));
 
         jPanel1.setBackground(new java.awt.Color(255, 255, 255));
         jPanel1.setMaximumSize(new java.awt.Dimension(400, 400));
         jPanel1.setMinimumSize(new java.awt.Dimension(400, 400));
         jPanel1.setPreferredSize(new java.awt.Dimension(400, 400));
-        jPanel1.setSize(new java.awt.Dimension(400, 400));
 
         jLabel5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/lodo-mediano.png"))); // NOI18N
 
         usrTextField.setFont(new java.awt.Font("Roboto", 0, 17)); // NOI18N
         usrTextField.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(134, 36, 31)));
+        usrTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                usrTextFieldKeyTyped(evt);
+            }
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                usrTextFieldKeyPressed(evt);
+            }
+        });
 
         pwdTextField.setFont(new java.awt.Font("Roboto", 0, 17)); // NOI18N
         pwdTextField.setBorder(javax.swing.BorderFactory.createMatteBorder(0, 0, 1, 0, new java.awt.Color(134, 36, 31)));
+        pwdTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                pwdTextFieldKeyPressed(evt);
+            }
+        });
 
         boton.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         boton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/state1.png"))); // NOI18N
@@ -176,34 +174,6 @@ public class Acceso extends javax.swing.JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jMenuPoliVoto.setText("PoliVoto Electrónico");
-
-        jmItemSalir.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_DELETE, java.awt.event.InputEvent.CTRL_MASK));
-        jmItemSalir.setText("Salir");
-        jmItemSalir.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jmItemSalirActionPerformed(evt);
-            }
-        });
-        jMenuPoliVoto.add(jmItemSalir);
-
-        jMenuBar.add(jMenuPoliVoto);
-
-        jMenuAyuda.setText("Ayuda");
-
-        jmContacto.setAccelerator(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_F11, 0));
-        jmContacto.setText("Contacto");
-        jmContacto.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jmContactoActionPerformed(evt);
-            }
-        });
-        jMenuAyuda.add(jmContacto);
-
-        jMenuBar.add(jMenuAyuda);
-
-        setJMenuBar(jMenuBar);
-
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -212,20 +182,12 @@ public class Acceso extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 478, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 500, Short.MAX_VALUE)
         );
 
         pack();
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
-
-    private void jmItemSalirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jmItemSalirActionPerformed
-        System.exit(0);
-    }//GEN-LAST:event_jmItemSalirActionPerformed
-
-    private void jmContactoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jmContactoActionPerformed
-        jContacto.setVisible(true);
-    }//GEN-LAST:event_jmContactoActionPerformed
 
     private void botonMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_botonMouseEntered
         boton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/state2.png")));
@@ -236,8 +198,9 @@ public class Acceso extends javax.swing.JFrame {
     }//GEN-LAST:event_botonMouseExited
 
     private void botonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_botonMouseClicked
-        botonClicked();
+        (new Thread(new Loading())).start();
         
+        botonClicked();
     }//GEN-LAST:event_botonMouseClicked
 
     private void botonMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_botonMousePressed
@@ -248,32 +211,35 @@ public class Acceso extends javax.swing.JFrame {
         boton.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/state2.png")));
     }//GEN-LAST:event_botonMouseReleased
 
-    private boolean logear_como_Consultor(String host, String pwd) {
-        boolean success = false;
-        try {
-            AC = new AccionesConsultor(host, pwd);
-            AC.consultaPreguntas();
-            success = true;
-            new IncommingRequestHandler().start(); // We need to keep track of this object.
-        } catch (IOException ex) {
-            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidKeySpecException ex) {
-            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NoSuchPaddingException ex) {
-            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidKeyException ex) {
-            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IllegalBlockSizeException ex) {
-            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (BadPaddingException ex) {
-            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (JSONException ex) {
-            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
+    private void usrTextFieldKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_usrTextFieldKeyPressed
+        char c = evt.getKeyChar();
+        if (c == '\n') {
+            (new Thread(new Loading())).start();
+        
+            botonClicked();
         }
-        return success;
-    }
+    }//GEN-LAST:event_usrTextFieldKeyPressed
+
+    private void pwdTextFieldKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_pwdTextFieldKeyPressed
+        char c = evt.getKeyChar();
+        if (c == '\n') {
+            (new Thread(new Loading())).start();
+        
+            botonClicked();
+        }
+    }//GEN-LAST:event_pwdTextFieldKeyPressed
+
+    private void usrTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_usrTextFieldKeyTyped
+        char c = evt.getKeyChar();
+        if (!Character.isDigit(c) && c != '.') {
+            getToolkit().beep();
+            evt.consume();
+        }
+        if (c == '\n') {
+            pwdTextField.selectAll();
+        }
+    }//GEN-LAST:event_usrTextFieldKeyTyped
+
     /**
      * @param args the command line arguments
      */
@@ -314,67 +280,98 @@ public class Acceso extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JMenu jMenuAyuda;
-    private javax.swing.JMenuBar jMenuBar;
-    private javax.swing.JMenu jMenuPoliVoto;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JMenuItem jmContacto;
-    private javax.swing.JMenuItem jmItemSalir;
     private javax.swing.JPasswordField pwdTextField;
     private javax.swing.JTextField usrTextField;
     // End of variables declaration//GEN-END:variables
+    Cargando loading = new Cargando(this);
+
+    private void continuar() {
+        AnalistaLocal analistaLocal = new AnalistaLocal(accionesConsultor);
+        analistaLocal.setIncommingRequestHandler(incommingRequestHandler);
+        analistaLocal.init();
+        dispose();
+    }
+
+    private int connect(String host, String pwd) {
+        int success;
+        try {
+            accionesConsultor = new AccionesConsultor(host, pwd);
+            if (accionesConsultor.getLID() > -1) {
+                success = 1;
+                accionesConsultor.consultaPreguntas();
+                incommingRequestHandler = new IncommingRequestHandler();
+                incommingRequestHandler.setAccionesConsultor(accionesConsultor);
+                incommingRequestHandler.start(); // We need to keep track of this object.
+            } else {
+                success = 0;
+            }
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | JSONException ex) {
+            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
+            success = -1;
+        }
+        return success;
+    }
 
     private void botonClicked() {
-        System.out.println("Boton Ingresar clicked");
-        char[] input = pwdTextField.getPassword();
-        String usr = usrTextField.getText();
-        String res = ConstruirDatos.loggear(usr, new String(input));
-        switch (res){
-            case ConstruirDatos.SUCCESSFUL:
-                this.setVisible(false);
-                padre.iniciarAnalista();
-                break;
-                
-            case ConstruirDatos.BAD_CONNECTION:
-                sinConexion();
-                /**
-                 * DEBUG -- BORRAR!!!
-                 */
-                this.setVisible(false);
-                padre.iniciarAnalista();
-                /**
-                 * DEBUG -- BORRAR!!!
-                 */
-                break;
-                
-            default:
-                usuarioInvalido();
-                break;
-        }
-        //Zero out the possible password, for security.
-        Arrays.fill(input, '0');
-        pwdTextField.selectAll();
-        
+        String host = usrTextField.getText();
+        String pwd = new String(pwdTextField.getPassword());
+        TryConnection tc = new TryConnection();
+        tc.host = host;
+        tc.pwd = pwd;
+        (new Thread(tc)).start();
     }
-    
-    private void usuarioInvalido(){
+
+    private void usuarioInvalido() {
         JOptionPane.showMessageDialog(
-                null, 
-                "Usuario inválido o Contraseña incorrecta", 
-                "Error", 
+                null,
+                "Usuario inválido o Contraseña incorrecta",
+                "Error",
                 JOptionPane.OK_OPTION,
                 new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/error.png"))
         );
     }
-    
-    private void sinConexion(){
+
+    private void sinConexion() {
         JOptionPane.showMessageDialog(
-                null, 
-                "Es imposible conectarse al servidor.\nRevise la conexión.", 
-                "Error", 
+                null,
+                "Es imposible conectarse al servidor.\nRevise la conexión.",
+                "Error",
                 JOptionPane.OK_OPTION,
                 new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/alert.png"))
         );
     }
 
+    class Loading implements Runnable {
+
+        @Override
+        public void run() {
+            loading.setLoadingPanel();
+        }
+
+    }
+    
+    class TryConnection implements Runnable{
+        String host;
+        String pwd;
+        
+        @Override
+        public void run() {
+            switch (connect(host, pwd)) {
+                case 1:
+                    loading.removeLoadingPanel();
+                    continuar();
+                    break;
+                case 0:
+                    loading.removeLoadingPanel();
+                    usuarioInvalido();
+                    break;
+                case -1:
+                    loading.removeLoadingPanel();
+                    sinConexion();
+                    break;
+            }
+        }
+        
+    }
 }

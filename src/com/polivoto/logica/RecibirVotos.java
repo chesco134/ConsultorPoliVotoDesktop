@@ -22,26 +22,33 @@ import org.jfree.data.general.DefaultPieDataset;
  */
 public class RecibirVotos {
 
-    public static boolean RECIBIENDO = true;
-    boolean nuevo = false;
-    public int votos = 0;
-    double poblacion = 0;
-    double porcentaje;
-    DecimalFormat decimales;
-    DefaultPieDataset data;
-    JFreeChart chart;
-    PiePlot plot;
-    ChartPanel chartPanel;
+    private boolean recibiendo = true;
+    private boolean nuevo = false;
+    private int votos = 0;
+    private double poblacion = 0;
+    private double porcentaje;
+    private DecimalFormat decimales;
+    private DefaultPieDataset data;
+    private JFreeChart chart;
+    private PiePlot plot;
+    private ChartPanel chartPanel;
     
-    JLabel lblvotos_totales;
-    JLabel lblporcentaje;
-    JPanel pnlgrafica;
-    public JPanel pnl_consulta;
-    public JPanel pnl_espera;
+    private JLabel lblvotos_totales;
+    private JLabel lblporcentaje;
+    private JPanel pnlgrafica;
+    JPanel pnl_consulta;
+    JPanel pnl_espera;
+
+    public boolean isRecibiendo() {
+        return recibiendo;
+    }
+
+    public void setRecibiendo(boolean recibiendo) {
+        this.recibiendo = recibiendo;
+    }
     
-    public void iniciarEscucha( int votos, double poblacion, JLabel lblvotos_totales, JLabel lblporcentaje,JPanel pnlgrafica, JPanel consulta, JPanel espera ) {
-        RECIBIENDO = true;
-        System.out.println("tomalala");
+    public void iniciarEscucha( int votos, double poblacion, JLabel lblvotos_totales, JLabel lblporcentaje, JPanel pnlgrafica, JPanel consulta, JPanel espera ) {
+        recibiendo = true;
         this.votos = votos;
         this.lblvotos_totales = lblvotos_totales;
         this.lblporcentaje = lblporcentaje;
@@ -49,16 +56,22 @@ public class RecibirVotos {
         this.poblacion = poblacion;
         this.pnl_consulta = consulta;
         this.pnl_espera = espera;
-        actualizarConteo();
+        actualizarConteo(false);
     }
     
-    public void actualizarConteo(){
+    public void actualizarConteo(boolean conIncremento){
         /*
         * Porcentaje
         */
-        votos = votos + 1;
+        if( conIncremento )
+            if( votos == poblacion){
+                votos++;
+                poblacion++;
+            }else{
+                votos++;
+            }
         lblvotos_totales.setText(""+votos);
-        porcentaje = (votos*100)/poblacion;
+        porcentaje = (votos*100)/(poblacion == 0 ? 1 : poblacion);
         if(porcentaje >= 100.0 || (porcentaje%1) == 0)
             decimales = new DecimalFormat("0");
         else
@@ -81,14 +94,13 @@ public class RecibirVotos {
         plot.setOutlineVisible(false);
         plot.setSectionPaint("SI", new Color(0,204,0));
         plot.setSectionPaint("NO", new Color(218,24,24));
-        // Crear el Panel del Grafico con ChartPanel
-        chartPanel = new ChartPanel(chart);
         
+        // Crear el Panel del Grafico con ChartPanel
+        chartPanel = new ChartPanel(chart,161,131,161,131,161,131,false,false,false,false,false,false);
         chartPanel.setEnabled(false);
         pnlgrafica.setLayout(new java.awt.BorderLayout());
         pnlgrafica.removeAll();
         pnlgrafica.add(chartPanel,BorderLayout.CENTER);
         pnlgrafica.validate();
-        
     }
 }

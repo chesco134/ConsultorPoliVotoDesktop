@@ -9,108 +9,85 @@ package com.polivoto.logica;
  *
  * @author Alfonso 7
  */
-import java.awt.CardLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Date;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.swing.Timer;
 
-public class Cronometro implements Runnable {
-    public static int onoff = 0;
-    Integer horas , minutos, segundos;
-    String hrs="", min="", seg="";
-    JLabel this_seg, this_min, this_hrs;
-    Thread hilo;
-    boolean cronometroActivo;
-    CardLayout card;
-    JPanel container;
-    
-    
-    public Cronometro(JLabel hrs, JLabel min, JLabel seg,Integer hora, Integer minuto, Integer segundo, CardLayout card, JPanel container)
-    {
+public class Cronometro {
+
+    private final JLabel this_seg, this_min, this_hrs;
+    private long tiempoRestante;
+    private String hrs = "", min = "", seg = "";
+    private Timer timer;
+    private boolean cronometroActivo;
+
+    public Cronometro(JLabel hrs, JLabel min, JLabel seg, long tiempoRestante) {
         this_min = min;
         this_hrs = hrs;
         this_seg = seg;
-        this.horas = hora;
-        this.minutos = minuto;
-        this.segundos = segundo;
-        this.container = container;
-        this.card = card;
-        
+        this.tiempoRestante = tiempoRestante - 1000;
     }
 
-    public void run(){
-        //min es minutos, seg es segundos y mil es milesimas de segundo
-        
-        try
-        {
-            //Mientras cronometroActivo sea verdadero entonces seguira
-            //aumentando el tiempo
-            while( cronometroActivo )
-            {
-                Thread.sleep( 1000 );
-                //Incrementamos 4 milesimas de segundo
-                segundos -= 1;
+    private String calcularEtiqueta(long tiempoActualMilis) {
+        int horasRestantes = (int) (tiempoActualMilis / 3600000);
+        long minutosRestantesMilis = tiempoActualMilis - (horasRestantes * 3600000);
+        int minutosRestantes = (int) (minutosRestantesMilis / 60000);
+        long segundosRestantesMilis = minutosRestantesMilis - (minutosRestantes * 60000);
+        int segundosRestantes = (int) (segundosRestantesMilis / 1000);
+        return (horasRestantes < 10 ? "0" + horasRestantes : horasRestantes)
+                + ":"
+                + (minutosRestantes < 10 ? "0" + minutosRestantes : minutosRestantes)
+                + ":"
+                + (segundosRestantes < 10 ? "0" + segundosRestantes : segundosRestantes);
+    }
 
-                //Cuando llega a 1000 osea 1 segundo aumenta 1 segundo
-                //y las milesimas de segundo de nuevo a 0
-                if( segundos < 0 )
-                {
-                    segundos = 59;
-                    minutos -= 1;
-                    //Si los segundos llegan a 60 entonces aumenta 1 los minutos
-                    //y los segundos vuelven a 0
-                    if( minutos < 0 )
-                    {
-                        minutos = 59;
-                        horas--;
-                        
-                        if(horas < 0)
-                        {
-                            minutos = 0;
-                            segundos = 0;
-                            horas = 0;
-                            pararCronometro();
-                        }
-                    }
-                    
-                }
-
-                //Esto solamente es estetica para que siempre este en formato
-                //00:00:000
-                if( horas < 10 ) hrs = "0" + horas;
-                else hrs = horas.toString();
-                if( minutos < 10 ) min = "0" + minutos;
-                else min = minutos.toString();
-
-                if( segundos < 10 ) seg = "0" + segundos;
-                else seg = segundos.toString();
-
-                //Colocamos en la etiqueta la informacion
-                this_seg.setText(seg);
-                this_min.setText(min);
-                this_hrs.setText(hrs);
-                
-            }
-        }catch(Exception e){
-            System.out.println("ERROR DE CONEXIÓN");
+    private void iniciarCuentaRegresiva() {
+        //Mientras cronometroActivo sea verdadero entonces seguira
+        //calculando el tiempo restante.
+        if (cronometroActivo && tiempoRestante > 0) {
+            actualizaEtiqueta(calcularEtiqueta(tiempoRestante));
+            tiempoRestante -= 1000;
         }
     }
-    
+
+    private void actualizaEtiqueta(String datosDeEtiqueta) {
+        //Colocamos en la etiqueta la informacion
+        String[] datos = datosDeEtiqueta.split(":");
+        hrs = datos[0];
+        min = datos[1];
+        seg = datos[2];
+        this_seg.setText(seg);
+        this_min.setText(min);
+        this_hrs.setText(hrs);
+    }
+
     //Iniciar el cronometro poniendo cronometroActivo 
     //en verdadero para que entre en el while
     public void iniciarCronometro() {
         cronometroActivo = true;
-        hilo = new Thread( this );
-        hilo.start();
+        timer = new Timer(1000, new CuentaRegresiva());
+        timer.setRepeats(true);
+        timer.start();
     }
 
     //Esto es para parar el cronometro
-    public void pararCronometro(){
-        card.show(container, "consultar");
+    public void pararCronometro() {
         cronometroActivo = false;
+        timer.stop();
     }
-    
-    public boolean estatusCronometro(){
+
+    public boolean estatusCronometro() {
         return cronometroActivo;
     }
-    
+
+    private class CuentaRegresiva implements ActionListener {
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            iniciarCuentaRegresiva();
+        }
+    }
+
 }

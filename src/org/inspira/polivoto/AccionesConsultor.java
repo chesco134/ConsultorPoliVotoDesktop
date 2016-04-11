@@ -1,7 +1,5 @@
-package com.polivoto.entidades;
+package org.inspira.polivoto;
 
-import com.polivoto.networking.IOHandler;
-import com.polivoto.security.Hasher;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -21,9 +19,11 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
+import org.inspira.devox.security.MD5Hash;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import com.polivoto.networking.IOHandler;
 
 public class AccionesConsultor {
 
@@ -39,12 +39,16 @@ public class AccionesConsultor {
     private JSONArray preguntas;
     private JSONArray conteoOpcionesPregunta;
     private JSONObject startupData;
+    private int totalDePreguntas;
+    public int getLID() {
+        return LID;
+    }
 
     public AccionesConsultor(String host, String psswd) throws UnknownHostException,
             IOException, NoSuchAlgorithmException, InvalidKeySpecException,
             NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
             BadPaddingException, JSONException {
-        Socket socket = new Socket(host, 23543);
+        socket = new Socket(host, 23543);
         HOST = host;
         ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
                 ,new DataOutputStream(socket.getOutputStream()));
@@ -71,7 +75,7 @@ public class AccionesConsultor {
         System.out.println("Done sending secret");
         json = new JSONObject();
         json.put("uName", "Consultor");
-        json.put("psswd", new Hasher().makeHashString(psswd));
+        json.put("psswd", new MD5Hash().makeHash(psswd));
         cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
         chunk = cipher.doFinal(json.toString().getBytes());
@@ -79,23 +83,25 @@ public class AccionesConsultor {
         LID = ioHandler.readInt();
         ioHandler.close();
         socket.close();
-        
-        socket = new Socket(HOST, 23543);
-        ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
-                , new DataOutputStream(socket.getOutputStream()));
-        ioHandler.writeInt(LID);
-        json = new JSONObject();
-        json.put("action", 15);
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-        chunk = cipher.doFinal(json.toString().getBytes());
-        ioHandler.sendMessage(chunk);
-        chunk = ioHandler.handleIncommingMessage();
-        cipher.init(Cipher.DECRYPT_MODE, secretKey);
-        String scorchingFire = new String(cipher.doFinal(chunk));
-        System.out.println("Startup Data: " + scorchingFire);
-        startupData = new JSONObject(new String(cipher.doFinal(chunk)));
-        ioHandler.close();
-        socket.close();
+        System.out.println("" + LID);
+        if(LID != -1){
+            socket = new Socket(HOST, 23543);
+            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
+                    , new DataOutputStream(socket.getOutputStream()));
+            ioHandler.writeInt(LID);
+            json = new JSONObject();
+            json.put("action", 15);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            chunk = cipher.doFinal(json.toString().getBytes());
+            ioHandler.sendMessage(chunk);
+            chunk = ioHandler.handleIncommingMessage();
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+            String scorchingFire = new String(cipher.doFinal(chunk));
+            System.out.println("Startup Data: " + scorchingFire);
+            startupData = new JSONObject(new String(cipher.doFinal(chunk)));
+            ioHandler.close();
+            socket.close();
+        }
     }
     
     public String consultaParametrosIniciales(){
@@ -184,6 +190,7 @@ public class AccionesConsultor {
                     row.put("opciones", consultaOpcionesPregunta(resp.getString(i)));
                     preguntas.put(row);
                     System.out.println("FIERRO PARIENTE: " + row.toString());
+                    totalDePreguntas = i;
                 }
                 ioHandler.close();
                 socket.close();
@@ -305,4 +312,10 @@ public class AccionesConsultor {
     public JSONObject getStartupData() {
         return startupData;
     }
+
+    public int getTotalDePreguntas() {
+        return totalDePreguntas;
+    }
+    
+    
 }
