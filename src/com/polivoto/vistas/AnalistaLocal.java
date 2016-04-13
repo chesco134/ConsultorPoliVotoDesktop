@@ -54,6 +54,7 @@ public class AnalistaLocal extends JFrame {
     private JSONObject json;
     private Integer poblacion;
     private String tituloVotacion;
+    private CardLayout cardsPreguntas;
     private List<Consultor> listaConsultores = new ArrayList<>();
 
     /**
@@ -64,7 +65,8 @@ public class AnalistaLocal extends JFrame {
     public AnalistaLocal(AccionesConsultor accionesConsultor) {
         this.accionesConsultor = accionesConsultor;
         initComponents();
-        jPanel2.setLayout(new GridLayout(1, (accionesConsultor.getTotalDePreguntas() + 1)));
+        cardsPreguntas = new CardLayout();
+        panelPreguntas.setLayout(cardsPreguntas);
 
         setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
 
@@ -92,9 +94,12 @@ public class AnalistaLocal extends JFrame {
         escuchar.iniciarEscucha(votos, poblacion, lblvotos_totales, lblporcentaje, pnlgrafica, Panel3, Panel1);
         Service service = new Service();
         service.start();
+        setPreguntasText();
+        timerPaneles = new Timer(6000, new PanelesPreguntas());
+        timerPaneles.start();
 //        timerMarquesina = new Timer(250, new marquesina());
 //        timerMarquesina.start();
-        setPreguntasText();
+        
     }
 
     public void setIncommingRequestHandler(IncommingRequestHandler incommingRequestHandler) {
@@ -107,7 +112,7 @@ public class AnalistaLocal extends JFrame {
             try {
                 JPanel panel = new JPanel(new GridLayout(0, 1));
                 panel.setBackground(new Color(255, 255, 255));
-                jPanel2.add(panel);
+                panelPreguntas.add(panel, "Pregunta " + (i + 1));
                 JLabel lab1 = new JLabel("Pregunta " + (i + 1) + ": " + ((JSONObject) js.get(i)).getString("pregunta"), JLabel.LEFT);
                 lab1.setFont(new Font("Roboto", 1, 18));
                 lab1.setForeground(new Color(134, 36, 31));
@@ -119,11 +124,12 @@ public class AnalistaLocal extends JFrame {
                     lab2.setForeground(new Color(0, 0, 0));
                     panel.add(lab2);
                 }
-
+                
             } catch (JSONException ex) {
                 Logger.getLogger(AnalistaLocal.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        cardsPreguntas.show(panelPreguntas, "Pregunta " + 1);
     }
 
     private class Service extends Thread {
@@ -199,7 +205,7 @@ public class AnalistaLocal extends JFrame {
         jLabel8 = new javax.swing.JLabel();
         panelEstado = new javax.swing.JPanel();
         encabezado = new javax.swing.JLabel();
-        jPanel2 = new javax.swing.JPanel();
+        panelPreguntas = new javax.swing.JPanel();
         panelPorcentaje = new javax.swing.JPanel();
         lbl_porcentaje = new javax.swing.JLabel();
         jPanel8 = new javax.swing.JPanel();
@@ -429,16 +435,16 @@ public class AnalistaLocal extends JFrame {
             .addComponent(encabezado, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
-        jPanel2.setBackground(new java.awt.Color(255, 255, 255));
+        panelPreguntas.setBackground(new java.awt.Color(255, 255, 255));
 
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        javax.swing.GroupLayout panelPreguntasLayout = new javax.swing.GroupLayout(panelPreguntas);
+        panelPreguntas.setLayout(panelPreguntasLayout);
+        panelPreguntasLayout.setHorizontalGroup(
+            panelPreguntasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 0, Short.MAX_VALUE)
         );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+        panelPreguntasLayout.setVerticalGroup(
+            panelPreguntasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 97, Short.MAX_VALUE)
         );
 
@@ -459,7 +465,7 @@ public class AnalistaLocal extends JFrame {
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, panelVotandoLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(panelPreguntas, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         panelVotandoLayout.setVerticalGroup(
             panelVotandoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -469,7 +475,7 @@ public class AnalistaLocal extends JFrame {
                 .addGap(5, 5, 5)
                 .addComponent(jLabel8)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(panelPreguntas, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(panelMain, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -744,7 +750,6 @@ public class AnalistaLocal extends JFrame {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
@@ -765,6 +770,7 @@ public class AnalistaLocal extends JFrame {
     private javax.swing.JPanel panelEstado;
     private javax.swing.JPanel panelMain;
     private javax.swing.JPanel panelPorcentaje;
+    private javax.swing.JPanel panelPreguntas;
     private javax.swing.JPanel panelPrincipal;
     private javax.swing.JPanel panelTimer;
     private javax.swing.JPanel panelVotando;
@@ -772,6 +778,7 @@ public class AnalistaLocal extends JFrame {
     private javax.swing.JPanel pnlgrafica;
     // End of variables declaration//GEN-END:variables
     private Timer timerMarquesina;
+    private Timer timerPaneles;
 
     class marquesina implements ActionListener {
 
@@ -781,6 +788,15 @@ public class AnalistaLocal extends JFrame {
             encabezado.setText(texto);
         }
 
+    }
+    
+    class PanelesPreguntas implements ActionListener{
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            cardsPreguntas.next(panelPreguntas);
+        }
+        
     }
 
 }

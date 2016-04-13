@@ -5,7 +5,6 @@
  */
 package com.polivoto.vistas;
 
-import com.polivoto.logica.ConstruirDatos;
 import com.polivoto.vistas.acciones.Datos;
 import java.awt.CardLayout;
 import java.awt.Color;
