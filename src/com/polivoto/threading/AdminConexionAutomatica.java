@@ -1,14 +1,12 @@
 package com.polivoto.threading;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Enumeration;
-import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,50 +53,45 @@ public class AdminConexionAutomatica extends Thread implements TareaDeConexion.E
         try {
             filaDeTareasInferior = new ConcurrentLinkedQueue<>();
             filaDeTareasSuperior = new ConcurrentLinkedQueue<>();
-            NetworkInterface nif = NetworkInterface.getByName("p1p1");
-            String str = "";
-            Enumeration<InetAddress> addrs = nif.getInetAddresses();
-            while (addrs.hasMoreElements()) {
-                InetAddress addr = addrs.nextElement();
-                str = str.concat(addr.toString() + "\n");
-            }
-            descubrirServidor(str);
+            descubrirServidor();
         } catch (NullPointerException | IOException e) {
             e.printStackTrace();
-        } catch (ArrayIndexOutOfBoundsException e) {
-            e.printStackTrace();
-            descubrirServidor("/192.168.43.1");
         }
     }
 
-    private void descubrirServidor(String str) {
-        String[] arrs = str.split("/");
-        String mAddr = arrs[arrs.length - 1];
-        String[] slots = mAddr.split("\\.");
-        String prefix = slots[0] + "." + slots[1] + "." + slots[2] + ".";
-        int hostActual = Integer.parseInt(slots[3].trim());
-        int tareasPendientesInferior = hostActual;
-        for (int i = tareasPendientesInferior; i > 0; i--) {
-            filaDeTareasInferior.add(new TareaDeConexion(this, prefix + i, 23543));
-        }
-        for (int i = hostActual + 1; i < 255; i++) {
-            filaDeTareasSuperior.add(new TareaDeConexion(this, prefix + i, 23543));
-        }
-        running = true;
-        int threadCount = 5;
-        totalTrabajadores = 2 * threadCount;
-        trabajadoresFinalizados = 0;
-        TrabajadorDeConexionInferior[] trabajadoresParteInf = new TrabajadorDeConexionInferior[threadCount];
-        for (int i = 0; i < threadCount; i++) {
-            trabajadoresParteInf[i] = new TrabajadorDeConexionInferior();
-            trabajadoresParteInf[i].setPriority(Thread.currentThread().getPriority() - 1);
-            trabajadoresParteInf[i].start();
-        }
-        TrabajadorDeConexionSuperior[] trabajadoresParteSup = new TrabajadorDeConexionSuperior[threadCount];
-        for (int i = 0; i < threadCount; i++) {
-            trabajadoresParteSup[i] = new TrabajadorDeConexionSuperior();
-            trabajadoresParteSup[i].setPriority(Thread.currentThread().getPriority() - 1);
-            trabajadoresParteSup[i].start();
+    private void descubrirServidor() throws UnknownHostException {
+        InetAddress thisHost = Inet4Address.getLocalHost();
+        if(!thisHost.isLoopbackAddress()){
+            String mAddr = thisHost.toString().split("/")[1];
+            System.out.println("Inet4Address: " + mAddr);
+            String[] slots = mAddr.split("\\.");
+            String prefix = slots[0] + "." + slots[1] + "." + slots[2] + ".";
+            int hostActual = Integer.parseInt(slots[3].trim());
+            int tareasPendientesInferior = hostActual;
+            for (int i = tareasPendientesInferior; i > 0; i--) {
+                filaDeTareasInferior.add(new TareaDeConexion(this, prefix + i, 23543));
+            }
+            for (int i = hostActual + 1; i < 255; i++) {
+                filaDeTareasSuperior.add(new TareaDeConexion(this, prefix + i, 23543));
+            }
+            running = true;
+            int threadCount = 5;
+            totalTrabajadores = 2 * threadCount;
+            trabajadoresFinalizados = 0;
+            TrabajadorDeConexionInferior[] trabajadoresParteInf = new TrabajadorDeConexionInferior[threadCount];
+            for (int i = 0; i < threadCount; i++) {
+                trabajadoresParteInf[i] = new TrabajadorDeConexionInferior();
+                trabajadoresParteInf[i].setPriority(Thread.currentThread().getPriority() - 1);
+                trabajadoresParteInf[i].start();
+            }
+            TrabajadorDeConexionSuperior[] trabajadoresParteSup = new TrabajadorDeConexionSuperior[threadCount];
+            for (int i = 0; i < threadCount; i++) {
+                trabajadoresParteSup[i] = new TrabajadorDeConexionSuperior();
+                trabajadoresParteSup[i].setPriority(Thread.currentThread().getPriority() - 1);
+                trabajadoresParteSup[i].start();
+            }
+        }else{
+            System.out.println("Posiblemente no tenemos acceso a la red.");
         }
     }
 
@@ -152,23 +145,5 @@ public class AdminConexionAutomatica extends Thread implements TareaDeConexion.E
         } catch (JSONException ex) {
             Logger.getLogger(AdminConexionAutomatica.class.getName()).log(Level.SEVERE, null, ex);
         }
-    }
-    
-    private void printNetworkInterfacesData() throws SocketException{
-            try {
-                Enumeration<InetAddress> inAddrs;
-                Enumeration<NetworkInterface> nifs = NetworkInterface.getNetworkInterfaces();
-                NetworkInterface ni;
-                while (nifs.hasMoreElements()) {
-                    ni = nifs.nextElement();
-                    System.out.println("--> " + ni);
-                    inAddrs = ni.getInetAddresses();
-                    while(inAddrs.hasMoreElements()){
-                        System.out.println("    ---> " + inAddrs.nextElement());
-                    }
-                }
-            } catch (NoSuchElementException e) {
-                e.printStackTrace();
-            }
     }
 }
