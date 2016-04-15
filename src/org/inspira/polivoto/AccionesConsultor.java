@@ -106,7 +106,7 @@ public class AccionesConsultor {
          }
          */
         JSONObject jvotaciones = new JSONObject(consultaVotacionesDisponibles());
-        consultaDetallesDeVotacion(jvotaciones.getJSONArray("titulos").getString(0));
+        consultaDetallesDeVotacion(jvotaciones.getJSONArray("titulos").getString(7));
     }
     
     public String consultaDetallesDeVotacion(String titulo){
