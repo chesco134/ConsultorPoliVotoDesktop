@@ -40,6 +40,7 @@ public class AccionesConsultor {
     private JSONArray conteoOpcionesPregunta;
     private JSONObject startupData;
     private int totalDePreguntas;
+
     public int getLID() {
         return LID;
     }
@@ -50,8 +51,7 @@ public class AccionesConsultor {
             BadPaddingException, JSONException {
         socket = new Socket(host, 23543);
         HOST = host;
-        ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
-                ,new DataOutputStream(socket.getOutputStream()));
+        ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
         ioHandler.writeInt(-1);
         System.out.println("We're waiting for the public key...");
         // SecureKey tradeoff...
@@ -83,36 +83,103 @@ public class AccionesConsultor {
         LID = ioHandler.readInt();
         ioHandler.close();
         socket.close();
-        System.out.println("" + LID);
-        if(LID != -1){
+        System.out.println("LID: " + LID);
+        System.out.println("Done ~~~");
+        /*
+         if(LID != -1){
+         socket = new Socket(HOST, 23543);
+         ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
+         , new DataOutputStream(socket.getOutputStream()));
+         ioHandler.writeInt(LID);
+         json = new JSONObject();
+         json.put("action", 15);
+         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+         chunk = cipher.doFinal(json.toString().getBytes());
+         ioHandler.sendMessage(chunk);
+         chunk = ioHandler.handleIncommingMessage();
+         cipher.init(Cipher.DECRYPT_MODE, secretKey);
+         String scorchingFire = new String(cipher.doFinal(chunk));
+         System.out.println("Startup Data: " + scorchingFire);
+         startupData = new JSONObject(scorchingFire);
+         ioHandler.close();
+         socket.close();
+         }
+         */
+        JSONObject jvotaciones = new JSONObject(consultaVotacionesDisponibles());
+        consultaDetallesDeVotacion(jvotaciones.getJSONArray("titulos").getString(0));
+    }
+    
+    public String consultaDetallesDeVotacion(String titulo){
+        String resp = null;
+        try {
             socket = new Socket(HOST, 23543);
-            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
-                    , new DataOutputStream(socket.getOutputStream()));
+            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
             ioHandler.writeInt(LID);
             json = new JSONObject();
-            json.put("action", 15);
+            json.put("action", 18);// La acción pertinente para llevar a cabo la solicitud.
+            json.put("titulo", titulo);
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
             chunk = cipher.doFinal(json.toString().getBytes());
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            String scorchingFire = new String(cipher.doFinal(chunk));
-            System.out.println("Startup Data: " + scorchingFire);
-            startupData = new JSONObject(new String(cipher.doFinal(chunk)));
+            resp = new String(cipher.doFinal(chunk));
+            System.out.println("Recibimos: " + resp);
             ioHandler.close();
             socket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (JSONException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InvalidKeyException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalBlockSizeException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (BadPaddingException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
         }
+        return resp;
     }
-    
-    public String consultaParametrosIniciales(){
+
+    public String consultaVotacionesDisponibles() {
+        String resp = null;
+        try {
+            socket = new Socket(HOST, 23543);
+            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
+            ioHandler.writeInt(LID);
+            json = new JSONObject();
+            json.put("action", 17);// La acción pertinente para llevar a cabo la solicitud.
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            chunk = cipher.doFinal(json.toString().getBytes());
+            ioHandler.sendMessage(chunk);
+            chunk = ioHandler.handleIncommingMessage();
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+            resp = new String(cipher.doFinal(chunk));
+            System.out.println("Recibimos: " + resp);
+            ioHandler.close();
+            socket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (JSONException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (InvalidKeyException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IllegalBlockSizeException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (BadPaddingException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return resp;
+    }
+
+    public String consultaParametrosIniciales() {
         String resp = null;
         try {
             /**
              * ** Prueba consulta de boleta ***
              */
             socket = new Socket(HOST, 23543);
-            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
-            , new DataOutputStream(socket.getOutputStream()));
+            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
             ioHandler.writeInt(LID);
             json = new JSONObject();
             json.put("action", 15);// La acción pertinente para llevar a cabo la solicitud.
@@ -137,8 +204,7 @@ public class AccionesConsultor {
              * ** Prueba consulta de boleta ***
              */
             socket = new Socket(HOST, 23543);
-            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
-            , new DataOutputStream(socket.getOutputStream()));
+            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
             ioHandler.writeInt(LID);
             json = new JSONObject();
             json.put("action", 14);
@@ -169,8 +235,7 @@ public class AccionesConsultor {
                  * ** Prueba consulta preguntas ***
                  */
                 socket = new Socket(HOST, 23543);
-                ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
-                , new DataOutputStream(socket.getOutputStream()));
+                ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
                 ioHandler.writeInt(LID);
                 json = new JSONObject();
                 json.put("action", 6);
@@ -211,8 +276,7 @@ public class AccionesConsultor {
              * ** Prueba consulta opciones de pregunta ***
              */
             socket = new Socket(HOST, 23543);
-            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
-            , new DataOutputStream(socket.getOutputStream()));
+            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
             ioHandler.writeInt(LID);
             json = new JSONObject();
             json.put("action", 13);
@@ -263,8 +327,7 @@ public class AccionesConsultor {
              * ** Prueba consulta opciones de pregunta ***
              */
             socket = new Socket(HOST, 23543);
-            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream())
-            , new DataOutputStream(socket.getOutputStream()));
+            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
             ioHandler.writeInt(LID);
             json = new JSONObject();
             json.put("action", 4);
@@ -316,6 +379,5 @@ public class AccionesConsultor {
     public int getTotalDePreguntas() {
         return totalDePreguntas;
     }
-    
-    
+
 }
