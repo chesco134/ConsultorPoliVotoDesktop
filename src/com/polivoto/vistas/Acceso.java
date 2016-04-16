@@ -5,6 +5,7 @@
  */
 package com.polivoto.vistas;
 
+import com.polivoto.threading.AdminConexionAutomatica;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -17,10 +18,15 @@ import javax.crypto.NoSuchPaddingException;
 import javax.swing.ImageIcon;
 import org.json.JSONException;
 import com.polivoto.threading.IncommingRequestHandler;
+import com.polivoto.threading.TareaDeConexion;
 import com.polivoto.vistas.acciones.Cargando;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.JOptionPane;
 import org.inspira.polivoto.AccionesConsultor;
 import org.jdesktop.swingx.prompt.PromptSupport;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  *
@@ -36,7 +42,7 @@ public class Acceso extends javax.swing.JFrame {
      */
     public Acceso() {
         initComponents();
-        PromptSupport.setPrompt("Direccion IP", usrTextField);
+        PromptSupport.setPrompt("Nombre de usuario", usrTextField);
         PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, usrTextField);
         PromptSupport.setPrompt("Contraseña", pwdTextField);
         PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, pwdTextField);
@@ -199,7 +205,7 @@ public class Acceso extends javax.swing.JFrame {
 
     private void botonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_botonMouseClicked
         (new Thread(new Loading())).start();
-        
+
         botonClicked();
     }//GEN-LAST:event_botonMouseClicked
 
@@ -215,7 +221,7 @@ public class Acceso extends javax.swing.JFrame {
         char c = evt.getKeyChar();
         if (c == '\n') {
             (new Thread(new Loading())).start();
-        
+
             botonClicked();
         }
     }//GEN-LAST:event_usrTextFieldKeyPressed
@@ -224,17 +230,13 @@ public class Acceso extends javax.swing.JFrame {
         char c = evt.getKeyChar();
         if (c == '\n') {
             (new Thread(new Loading())).start();
-        
+
             botonClicked();
         }
     }//GEN-LAST:event_pwdTextFieldKeyPressed
 
     private void usrTextFieldKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_usrTextFieldKeyTyped
         char c = evt.getKeyChar();
-        if (!Character.isDigit(c) && c != '.') {
-            getToolkit().beep();
-            evt.consume();
-        }
         if (c == '\n') {
             pwdTextField.selectAll();
         }
@@ -293,10 +295,10 @@ public class Acceso extends javax.swing.JFrame {
         dispose();
     }
 
-    private int connect(String host, String pwd) {
+    private int connect(String host, String usrName, String pwd) {
         int success;
         try {
-            accionesConsultor = new AccionesConsultor(host, pwd);
+            accionesConsultor = new AccionesConsultor(host, usrName, pwd);
             if (accionesConsultor.getLID() > -1) {
                 success = 1;
                 accionesConsultor.consultaPreguntas();
@@ -306,20 +308,80 @@ public class Acceso extends javax.swing.JFrame {
             } else {
                 success = 0;
             }
-        } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | JSONException ex) {
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | JSONException ex) {
             Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
             success = -1;
+        } catch (IOException e) {
+            try {
+                accionesConsultor.consultaVotacionesDisponibles();
+                success = 2;
+            } catch (IOException ex) {
+                Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
+                success = -1;
+            }
         }
         return success;
     }
 
     private void botonClicked() {
-        String host = usrTextField.getText();
+        String usrName = usrTextField.getText();
         String pwd = new String(pwdTextField.getPassword());
-        TryConnection tc = new TryConnection();
-        tc.host = host;
-        tc.pwd = pwd;
-        (new Thread(tc)).start();
+        AdminConexionAutomatica admin;
+        admin = new AdminConexionAutomatica();
+        TareaDeConexion.EscuchaDeConexion escuchaDeConexion;
+        escuchaDeConexion = new TareaDeConexion.EscuchaDeConexion() {
+            @Override
+            public void conexionExitosa(TareaDeConexion tarea) {
+                admin.cancelRunning(tarea);
+                System.out.println("Done.\nNow connecting...");
+                loading.removeLoadingPanel();
+                switch (connect(tarea.getHost(), usrName, pwd)) {
+                    case 2:
+                        try {
+                            JSONObject json = new JSONObject(accionesConsultor.getVotacionesDisponibles());
+                            JSONArray array = json.getJSONArray("titulos");
+                            String[] titulos = new String[array.length()];
+                            for (int i = 0; i < titulos.length; i++) {
+                                titulos[i] = array.getString(i);
+                            }
+                            String tituloSeleccionado
+                                    = (String) JOptionPane.showInputDialog(null, "Por favor seleccione un título de votación:",
+                                            "Votaciones hechas", JOptionPane.QUESTION_MESSAGE,
+                                            null, titulos, titulos[0]);
+                            accionesConsultor.consultaDetallesDeVotacion(tituloSeleccionado);
+                            String detallesVotacion = accionesConsultor.getDetallesDeVotacion();
+                            json = new JSONObject(detallesVotacion.replace("titulo", "pregunta"));
+                            JSONArray jpreguntas = json.getJSONArray("pretuntas");
+                            accionesConsultor.setConteoOpcionesPregunta(jpreguntas);
+                            for (int i = 0; i < jpreguntas.length(); i++) {
+                                Consultor consultor = new Consultor(i, accionesConsultor, "Sco");
+                                consultor.iniciar();
+                            }
+                            setVisible(false);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                        break;
+                    case 1:
+                        continuar();
+                        break;
+                    case 0:
+                        usuarioInvalido();
+                        break;
+                    case -1:
+                        sinConexion();
+                        break;
+                }
+            }
+
+            @Override
+            public void conexionFallida() {
+                loading.removeLoadingPanel();
+            }
+        };
+        admin.setEscuchaConexion(escuchaDeConexion);
+        admin.start();
+        System.out.println("Iniciado servicio de búsqueda.");
     }
 
     private void usuarioInvalido() {
@@ -349,29 +411,5 @@ public class Acceso extends javax.swing.JFrame {
             loading.setLoadingPanel();
         }
 
-    }
-    
-    class TryConnection implements Runnable{
-        String host;
-        String pwd;
-        
-        @Override
-        public void run() {
-            switch (connect(host, pwd)) {
-                case 1:
-                    loading.removeLoadingPanel();
-                    continuar();
-                    break;
-                case 0:
-                    loading.removeLoadingPanel();
-                    usuarioInvalido();
-                    break;
-                case -1:
-                    loading.removeLoadingPanel();
-                    sinConexion();
-                    break;
-            }
-        }
-        
     }
 }

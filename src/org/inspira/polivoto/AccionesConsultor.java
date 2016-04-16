@@ -40,12 +40,15 @@ public class AccionesConsultor {
     private JSONArray conteoOpcionesPregunta;
     private JSONObject startupData;
     private int totalDePreguntas;
+    private String usrName;
+    private String votacionesDisponibles;
+    private String detallesDeVotacion;
 
     public int getLID() {
         return LID;
     }
 
-    public AccionesConsultor(String host, String psswd) throws UnknownHostException,
+    public AccionesConsultor(String host, String usrName, String psswd) throws UnknownHostException,
             IOException, NoSuchAlgorithmException, InvalidKeySpecException,
             NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException,
             BadPaddingException, JSONException {
@@ -74,7 +77,7 @@ public class AccionesConsultor {
         ioHandler.sendMessage(cipB);
         System.out.println("Done sending secret");
         json = new JSONObject();
-        json.put("uName", "Consultor");
+        json.put("uName", usrName);
         json.put("psswd", new MD5Hash().makeHash(psswd));
         cipher = Cipher.getInstance("AES");
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
@@ -105,12 +108,9 @@ public class AccionesConsultor {
          socket.close();
          }
          */
-        JSONObject jvotaciones = new JSONObject(consultaVotacionesDisponibles());
-        consultaDetallesDeVotacion(jvotaciones.getJSONArray("titulos").getString(7));
     }
     
-    public String consultaDetallesDeVotacion(String titulo){
-        String resp = null;
+    public void consultaDetallesDeVotacion(String titulo){
         try {
             socket = new Socket(HOST, 23543);
             ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
@@ -123,8 +123,8 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            resp = new String(cipher.doFinal(chunk));
-            System.out.println("Recibimos: " + resp);
+            detallesDeVotacion = new String(cipher.doFinal(chunk));
+            System.out.println("Recibimos: " + detallesDeVotacion);
             ioHandler.close();
             socket.close();
         } catch (IOException ex) {
@@ -138,11 +138,9 @@ public class AccionesConsultor {
         } catch (BadPaddingException ex) {
             Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return resp;
     }
 
-    public String consultaVotacionesDisponibles() {
-        String resp = null;
+    public void consultaVotacionesDisponibles() throws IOException{
         try {
             socket = new Socket(HOST, 23543);
             ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
@@ -154,12 +152,10 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            resp = new String(cipher.doFinal(chunk));
-            System.out.println("Recibimos: " + resp);
+            votacionesDisponibles = new String(cipher.doFinal(chunk));
+            System.out.println("Recibimos: " + votacionesDisponibles);
             ioHandler.close();
             socket.close();
-        } catch (IOException ex) {
-            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
         } catch (JSONException ex) {
             Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InvalidKeyException ex) {
@@ -169,7 +165,6 @@ public class AccionesConsultor {
         } catch (BadPaddingException ex) {
             Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
         }
-        return resp;
     }
 
     public String consultaParametrosIniciales() {
@@ -228,7 +223,7 @@ public class AccionesConsultor {
         return result;
     }
 
-    public synchronized void consultaPreguntas() {
+    public synchronized void consultaPreguntas() throws IOException{
         if (preguntas == null) {
             try {
                 /**
@@ -261,7 +256,7 @@ public class AccionesConsultor {
                 socket.close();
             } catch (JSONException e) {
                 Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, e);
-            } catch (IOException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException ex) {
+            } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException ex) {
                 Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
@@ -371,6 +366,11 @@ public class AccionesConsultor {
     public JSONArray getConteoOpcionesPregunta() {
         return conteoOpcionesPregunta;
     }
+    
+    public void setConteoOpcionesPregunta(JSONArray conteoOpcionesPregunta){
+        this.conteoOpcionesPregunta = conteoOpcionesPregunta;
+        preguntas = conteoOpcionesPregunta;
+    }
 
     public JSONObject getStartupData() {
         return startupData;
@@ -378,6 +378,14 @@ public class AccionesConsultor {
 
     public int getTotalDePreguntas() {
         return totalDePreguntas;
+    }
+
+    public String getVotacionesDisponibles() {
+        return votacionesDisponibles;
+    }
+
+    public String getDetallesDeVotacion() {
+        return detallesDeVotacion;
     }
 
 }

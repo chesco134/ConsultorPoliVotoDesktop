@@ -67,6 +67,13 @@ public class Datos {
         setcolors();
     }
     
+    public Datos(AccionesConsultor ac, int pox, String caso){
+        this.ac = ac;
+        this.pox = pox;
+        this.rotating = false;
+        setcolors();
+    }
+    
 
     private PieDataset crearDatasetPie() {
         DefaultPieDataset datos = new DefaultPieDataset();

@@ -19,10 +19,11 @@ import org.json.JSONException;
 /**
  * Created by jcapiz on 13/01/16.
  */
-public class AdminConexionAutomatica extends Thread implements TareaDeConexion.EscuchaDeConexion {
+public class AdminConexionAutomatica extends Thread {
 
     private ConcurrentLinkedQueue<TareaDeConexion> filaDeTareasInferior;
     private ConcurrentLinkedQueue<TareaDeConexion> filaDeTareasSuperior;
+    private TareaDeConexion.EscuchaDeConexion escuchaConexion;
     private int trabajadoresFinalizados;
     private int totalTrabajadores;
     private boolean running;
@@ -30,11 +31,13 @@ public class AdminConexionAutomatica extends Thread implements TareaDeConexion.E
     public AdminConexionAutomatica() {
     }
 
-    @Override
-    public synchronized void conexionExitosa(TareaDeConexion tarea) {
+    public void setEscuchaConexion(TareaDeConexion.EscuchaDeConexion escuchaConexion) {
+        this.escuchaConexion = escuchaConexion;
+    }
+    
+    public synchronized void cancelRunning(TareaDeConexion tarea){
         System.out.println("Hemos hecho la conexión: " + tarea.getHost());
         running = false;
-        makeConnection(tarea.getHost());
     }
 
     public synchronized void trabajoTerminado() {
@@ -69,10 +72,10 @@ public class AdminConexionAutomatica extends Thread implements TareaDeConexion.E
             int hostActual = Integer.parseInt(slots[3].trim());
             int tareasPendientesInferior = hostActual;
             for (int i = tareasPendientesInferior; i > 0; i--) {
-                filaDeTareasInferior.add(new TareaDeConexion(this, prefix + i, 23543));
+                filaDeTareasInferior.add(new TareaDeConexion(escuchaConexion, prefix + i, 23543));
             }
             for (int i = hostActual + 1; i < 255; i++) {
-                filaDeTareasSuperior.add(new TareaDeConexion(this, prefix + i, 23543));
+                filaDeTareasSuperior.add(new TareaDeConexion(escuchaConexion, prefix + i, 23543));
             }
             running = true;
             int threadCount = 5;
@@ -122,28 +125,6 @@ public class AdminConexionAutomatica extends Thread implements TareaDeConexion.E
                 tarea.run();
             }
             trabajoTerminado();
-        }
-    }
-    
-    private void makeConnection(String host){
-        try {
-            new AccionesConsultor(host, "upiita");
-        } catch (IOException ex) {
-            Logger.getLogger(AdminConexionAutomatica.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(AdminConexionAutomatica.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidKeySpecException ex) {
-            Logger.getLogger(AdminConexionAutomatica.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NoSuchPaddingException ex) {
-            Logger.getLogger(AdminConexionAutomatica.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (InvalidKeyException ex) {
-            Logger.getLogger(AdminConexionAutomatica.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IllegalBlockSizeException ex) {
-            Logger.getLogger(AdminConexionAutomatica.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (BadPaddingException ex) {
-            Logger.getLogger(AdminConexionAutomatica.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (JSONException ex) {
-            Logger.getLogger(AdminConexionAutomatica.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }

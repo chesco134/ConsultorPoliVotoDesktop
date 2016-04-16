@@ -49,7 +49,21 @@ public class Consultor extends javax.swing.JFrame {
     public Consultor(int pox, AccionesConsultor accionesConsultor){
         this.accionesConsultor = accionesConsultor;
         this.data = new Datos(accionesConsultor, pox);
-        
+        this.pox = pox;
+        initComponents();
+        Resultados.setLayout(card);
+        panelBarras = new BarrasForm();
+        panelPastel = new PastelForm();
+        panelTabla = new TablaForm();
+        Resultados.add(panelBarras, "barras");
+        Resultados.add(panelPastel, "pastel");
+        Resultados.add(panelTabla, "tabla");
+        setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
+    }
+    
+    public Consultor(int pox, AccionesConsultor accionesConsultor, String label){
+        this.accionesConsultor = accionesConsultor;
+        this.data = new Datos(accionesConsultor, pox, label);
         this.pox = pox;
         initComponents();
         Resultados.setLayout(card);

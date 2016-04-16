@@ -11,7 +11,7 @@ public class TareaDeConexion {
 
     private final int port;
     private final String host;
-    private EscuchaDeConexion escucha;
+    private final EscuchaDeConexion escucha;
 
     public String getHost() {
         return host;
@@ -23,6 +23,7 @@ public class TareaDeConexion {
 
     public interface EscuchaDeConexion{
         void conexionExitosa(TareaDeConexion tarea);
+        void conexionFallida();
     }
 
     public TareaDeConexion(EscuchaDeConexion escucha, String host, int port){
