@@ -334,7 +334,6 @@ public class Acceso extends javax.swing.JFrame {
             public void conexionExitosa(TareaDeConexion tarea) {
                 admin.cancelRunning(tarea);
                 System.out.println("Done.\nNow connecting...");
-                loading.removeLoadingPanel();
                 switch (connect(tarea.getHost(), usrName, pwd)) {
                     case 2:
                         try {
@@ -385,6 +384,7 @@ public class Acceso extends javax.swing.JFrame {
                         sinConexion();
                         break;
                 }
+                loading.removeLoadingPanel();
             }
 
             @Override
