@@ -4,17 +4,7 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import org.inspira.polivoto.AccionesConsultor;
-import org.json.JSONException;
 
 /**
  * Created by jcapiz on 13/01/16.
@@ -47,6 +37,7 @@ public class AdminConexionAutomatica extends Thread {
                 running = false;
                 System.out.println("\"No pudimos encontrar al servidor, "
                         + "por favor ingrese la ip con la entrada manual.\"");
+                escuchaConexion.conexionFallida();
             }
         }
     }

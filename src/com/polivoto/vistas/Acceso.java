@@ -350,9 +350,22 @@ public class Acceso extends javax.swing.JFrame {
                                             null, titulos, titulos[0]);
                             accionesConsultor.consultaDetallesDeVotacion(tituloSeleccionado);
                             String detallesVotacion = accionesConsultor.getDetallesDeVotacion();
-                            json = new JSONObject(detallesVotacion.replace("titulo", "pregunta"));
-                            JSONArray jpreguntas = json.getJSONArray("pretuntas");
-                            accionesConsultor.setConteoOpcionesPregunta(jpreguntas);
+                            json = new JSONObject(detallesVotacion);
+                            JSONArray jpreguntas = json.getJSONArray("preguntas");
+                            accionesConsultor.setPreguntas(jpreguntas);
+                            JSONArray extra = new JSONArray();
+                            JSONObject result;
+                            for (int j = 0; j < jpreguntas.length(); j++) {
+                                int participantesQueRespondieronPregunta = 0;
+                                for (int i = 0; i < jpreguntas.getJSONObject(j).getJSONArray("opciones").length(); i++) {
+                                    participantesQueRespondieronPregunta += jpreguntas.getJSONObject(j).getJSONArray("opciones").getJSONObject(i).getInt("cantidad");
+                                }
+                                result = new JSONObject();
+                                result.put("participantes", participantesQueRespondieronPregunta); // Es el número total de participantes por pregunta.
+                                result.put("conteo", jpreguntas.getJSONObject(j).getJSONArray("opciones")); // Arreglo de conteo de votos por opción
+                                extra.put(result);
+                            }
+                            accionesConsultor.setConteoOpcionesPregunta(extra);
                             for (int i = 0; i < jpreguntas.length(); i++) {
                                 Consultor consultor = new Consultor(i, accionesConsultor, "Sco");
                                 consultor.iniciar();

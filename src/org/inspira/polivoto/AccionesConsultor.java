@@ -230,7 +230,9 @@ public class AccionesConsultor {
                  * ** Prueba consulta preguntas ***
                  */
                 socket = new Socket(HOST, 23543);
-                ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
+                ioHandler = 
+                        new IOHandler(new DataInputStream(socket.getInputStream()),
+                                new DataOutputStream(socket.getOutputStream()));
                 ioHandler.writeInt(LID);
                 json = new JSONObject();
                 json.put("action", 6);
@@ -260,7 +262,7 @@ public class AccionesConsultor {
                 Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
             }
         } else {
-            System.out.println("Esto es una tontería: " + preguntas.length());
+            System.out.println("Esto es una insensatez: " + preguntas.length());
         }
     }
 
@@ -362,6 +364,10 @@ public class AccionesConsultor {
     public JSONArray getPreguntas() {
         return preguntas;
     }
+    
+    public void setPreguntas(JSONArray preguntas){
+        this.preguntas = preguntas;
+    }
 
     public JSONArray getConteoOpcionesPregunta() {
         return conteoOpcionesPregunta;
@@ -369,7 +375,6 @@ public class AccionesConsultor {
     
     public void setConteoOpcionesPregunta(JSONArray conteoOpcionesPregunta){
         this.conteoOpcionesPregunta = conteoOpcionesPregunta;
-        preguntas = conteoOpcionesPregunta;
     }
 
     public JSONObject getStartupData() {

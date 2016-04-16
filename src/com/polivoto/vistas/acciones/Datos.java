@@ -120,7 +120,7 @@ public class Datos {
                 }
             }
         } catch (JSONException ex){
-            ex.printStackTrace();
+            ex.printStackTrace(); 
         }
         plot.setSimpleLabels(true);
         plot.setBackgroundPaint(new GradientPaint(0, 0, Color.white, 0, 1000, Color.white));
