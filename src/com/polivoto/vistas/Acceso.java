@@ -20,8 +20,6 @@ import org.json.JSONException;
 import com.polivoto.threading.IncommingRequestHandler;
 import com.polivoto.threading.TareaDeConexion;
 import com.polivoto.vistas.acciones.Cargando;
-import java.util.ArrayList;
-import java.util.List;
 import javax.swing.JOptionPane;
 import org.inspira.polivoto.AccionesConsultor;
 import org.jdesktop.swingx.prompt.PromptSupport;
@@ -42,10 +40,13 @@ public class Acceso extends javax.swing.JFrame {
      */
     public Acceso() {
         initComponents();
-        PromptSupport.setPrompt("Nombre de usuario", usrTextField);
+        PromptSupport.setPrompt("Consultor", usrTextField);
         PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, usrTextField);
         PromptSupport.setPrompt("Contraseña", pwdTextField);
         PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, pwdTextField);
+        usrTextField.setEnabled(false);
+        usrTextField.setText("Capturista");
+        pwdTextField.requestFocus();
     }
 
     /**
