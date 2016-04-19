@@ -11,7 +11,6 @@ package com.polivoto.logica;
  */
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Date;
 import javax.swing.JLabel;
 import javax.swing.Timer;
 
@@ -27,7 +26,6 @@ public class Cronometro {
         this_min = min;
         this_hrs = hrs;
         this_seg = seg;
-        this.tiempoRestante = tiempoRestante - 1000;
     }
 
     private String calcularEtiqueta(long tiempoActualMilis) {
@@ -41,15 +39,6 @@ public class Cronometro {
                 + (minutosRestantes < 10 ? "0" + minutosRestantes : minutosRestantes)
                 + ":"
                 + (segundosRestantes < 10 ? "0" + segundosRestantes : segundosRestantes);
-    }
-
-    private void iniciarCuentaRegresiva() {
-        //Mientras cronometroActivo sea verdadero entonces seguira
-        //calculando el tiempo restante.
-        if (cronometroActivo && tiempoRestante > 0) {
-            actualizaEtiqueta(calcularEtiqueta(tiempoRestante));
-            tiempoRestante -= 1000;
-        }
     }
 
     private void actualizaEtiqueta(String datosDeEtiqueta) {
@@ -82,6 +71,17 @@ public class Cronometro {
         return cronometroActivo;
     }
 
+    private void iniciarCuentaRegresiva() {
+        //Mientras cronometroActivo sea verdadero entonces seguira
+        //calculando el tiempo restante.
+        if (cronometroActivo && tiempoRestante > 0) {
+            actualizaEtiqueta(calcularEtiqueta(tiempoRestante));
+            tiempoRestante -= 1000;
+        }else{
+            pararCronometro();
+        }
+    }
+
     private class CuentaRegresiva implements ActionListener {
 
         @Override
@@ -90,4 +90,7 @@ public class Cronometro {
         }
     }
 
+    public void setTiempoRestante(long tiempoRestante){
+        this.tiempoRestante = tiempoRestante;
+    }
 }

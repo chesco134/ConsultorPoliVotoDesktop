@@ -45,7 +45,7 @@ public class Acceso extends javax.swing.JFrame {
         PromptSupport.setPrompt("Contraseña", pwdTextField);
         PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, pwdTextField);
         usrTextField.setEnabled(false);
-        usrTextField.setText("Capturista");
+        usrTextField.setText("Consultor");
         pwdTextField.requestFocus();
     }
 

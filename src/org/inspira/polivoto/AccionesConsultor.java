@@ -47,6 +47,10 @@ public class AccionesConsultor {
     public int getLID() {
         return LID;
     }
+    
+    public String getHost(){
+        return HOST;
+    }
 
     public AccionesConsultor(String host, String usrName, String psswd) throws UnknownHostException,
             IOException, NoSuchAlgorithmException, InvalidKeySpecException,

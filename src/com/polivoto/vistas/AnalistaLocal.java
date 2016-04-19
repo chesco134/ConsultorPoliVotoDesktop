@@ -9,6 +9,7 @@ import com.polivoto.logica.Cronometro;
 import com.polivoto.logica.RecibirVotos;
 import com.polivoto.networking.IOHandler;
 import com.polivoto.threading.IncommingRequestHandler;
+import com.polivoto.threading.ServicioDeSincronizacionDeReloj;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -69,9 +70,13 @@ public class AnalistaLocal extends JFrame {
         panelVotando.setVisible(true);
         Panel3.setVisible(false);
         try {
-            json = new JSONObject(this.accionesConsultor.consultaParametrosIniciales());
+            String startupDataString = this.accionesConsultor.consultaParametrosIniciales();
+            System.out.println("Startup data: " + startupDataString);
+            json = new JSONObject(startupDataString);
             cronometro = new Cronometro(lblhrs, lblmin, lblseg, json.getLong("tiempo_final"));
             cronometro.iniciarCronometro();
+            java.util.Timer servicioDeSincronizacionDeReloj = new java.util.Timer();
+            servicioDeSincronizacionDeReloj.schedule(new ServicioDeSincronizacionDeReloj(accionesConsultor.getHost(), cronometro), 0, 10000);
             escuchar = new RecibirVotos();
             poblacion = json.getInt("poblacion");
             votos = json.getInt("votos");
@@ -585,21 +590,21 @@ public class AnalistaLocal extends JFrame {
         lblhrs.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblhrs.setText("00");
         lblhrs.setOpaque(true);
-        jPanel9.add(lblhrs, new org.netbeans.lib.awtextra.AbsoluteConstraints(50, 60, 140, 80));
+        jPanel9.add(lblhrs, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 60, 160, 80));
 
         lblmin.setBackground(new java.awt.Color(255, 255, 255));
         lblmin.setFont(new java.awt.Font("Roboto", 1, 90)); // NOI18N
         lblmin.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblmin.setText("00");
         lblmin.setOpaque(true);
-        jPanel9.add(lblmin, new org.netbeans.lib.awtextra.AbsoluteConstraints(220, 60, 130, 80));
+        jPanel9.add(lblmin, new org.netbeans.lib.awtextra.AbsoluteConstraints(220, 60, 140, 80));
 
         lblseg.setBackground(new java.awt.Color(255, 255, 255));
         lblseg.setFont(new java.awt.Font("Roboto", 1, 90)); // NOI18N
         lblseg.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblseg.setText("00");
         lblseg.setOpaque(true);
-        jPanel9.add(lblseg, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 60, 130, 80));
+        jPanel9.add(lblseg, new org.netbeans.lib.awtextra.AbsoluteConstraints(380, 60, 150, 80));
 
         lblpuntos.setBackground(new java.awt.Color(255, 255, 255));
         lblpuntos.setFont(new java.awt.Font("Roboto", 1, 90)); // NOI18N
@@ -650,7 +655,7 @@ public class AnalistaLocal extends JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1361, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1397, Short.MAX_VALUE)
             .addComponent(panelPrincipal, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(

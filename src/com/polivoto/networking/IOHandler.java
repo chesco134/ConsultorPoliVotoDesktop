@@ -71,6 +71,10 @@ public class IOHandler {
         salida.writeInt(i);
         salida.flush();
     }
+    
+    public long readLong() throws IOException{
+        return entrada.readLong();
+    }
 
     public int getRate() {
         return rate;
