@@ -2,6 +2,7 @@ package com.polivoto.shared;
 
 import java.io.Serializable;
 import java.util.LinkedList;
+import java.util.List;
 
 public class Pregunta implements Serializable{
 	/**
@@ -10,6 +11,7 @@ public class Pregunta implements Serializable{
 	private static final long serialVersionUID = 1L;
 	private String titulo;
 	private LinkedList<Opcion> opciones;
+        private List<ResultadoPorPerfil> resultadosPorPerfil;
 
 	public Pregunta(String titulo) {
 		this.titulo = titulo;

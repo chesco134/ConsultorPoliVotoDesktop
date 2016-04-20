@@ -365,19 +365,19 @@ public class AccionesConsultor {
             JSONArray jPerfiles = json.getJSONArray("resultados_por_perfil");
             JSONObject jPerfil;
             JSONArray jResultadosPerfil;
-            resultadosPorPerfil = new ArrayList<>();
+            List<ResultadoPorPerfil> resultadosPorPerfil = new ArrayList<>();
             ResultadoPorPerfil rpp;
-            Map<String, Integer> mapaResultadosPorPerfil;
+            List<Opcion> opcionesPorPerfil;
             for(int i=0; i< jPerfiles.length(); i++){
                 jPerfil = jPerfiles.getJSONObject(i);
                 rpp = new ResultadoPorPerfil();
                 rpp.setPerfil(jPerfil.getString("perfil"));
                 jResultadosPerfil = jPerfil.getJSONArray("resultados");
-                mapaResultadosPorPerfil = new TreeMap<>();
+                opcionesPorPerfil = new ArrayList<>();
                 for(int j=0; j<jResultadosPerfil.length(); j++){
-                    mapaResultadosPorPerfil.put(jResultadosPerfil.getJSONObject(j).getString("reactivo"), jResultadosPerfil.getJSONObject(j).getInt("cantidad"));
+                    opcionesPorPerfil.add(new Opcion(jResultadosPerfil.getJSONObject(j).getString("reactivo"), jResultadosPerfil.getJSONObject(j).getInt("cantidad")));
                 }
-                rpp.setResultados(mapaResultadosPorPerfil);
+                rpp.setOpciones(opcionesPorPerfil);
                 resultadosPorPerfil.add(rpp);
             }
             result = new JSONObject();

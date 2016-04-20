@@ -11,6 +11,11 @@ public class Opcion implements Serializable {
     private String nombre;
     private int cantidad;
 
+    public Opcion(String nombre, int cantidad) {
+        this.nombre = nombre;
+        this.cantidad = cantidad;
+    }
+
     public Opcion(String nombre) {
         this.nombre = nombre;
         cantidad = 0;

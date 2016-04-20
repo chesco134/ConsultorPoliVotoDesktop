@@ -7,7 +7,7 @@
 package com.polivoto.shared;
 
 import java.io.Serializable;
-import java.util.Map;
+import java.util.List;
 
 /**
  *
@@ -16,7 +16,7 @@ import java.util.Map;
 public class ResultadoPorPerfil implements Serializable {
     
     private String perfil;
-    private Map<String, Integer> resultados;
+    private List<Opcion> opciones;
 
     public String getPerfil() {
         return perfil;
@@ -26,11 +26,11 @@ public class ResultadoPorPerfil implements Serializable {
         this.perfil = perfil;
     }
 
-    public Map<String, Integer> getResultados() {
-        return resultados;
+    public List<Opcion> getOpciones() {
+        return opciones;
     }
 
-    public void setResultados(Map<String, Integer> resultados) {
-        this.resultados = resultados;
+    public void setOpciones(List<Opcion> opciones) {
+        this.opciones = opciones;
     }
 }
