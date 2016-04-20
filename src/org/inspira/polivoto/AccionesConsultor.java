@@ -24,6 +24,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.polivoto.networking.IOHandler;
+import com.polivoto.shared.Opcion;
+import com.polivoto.shared.ResultadoPorPerfil;
+import com.polivoto.shared.Votacion;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class AccionesConsultor {
 
@@ -43,6 +50,8 @@ public class AccionesConsultor {
     private String usrName;
     private String votacionesDisponibles;
     private String detallesDeVotacion;
+    private List<ResultadoPorPerfil> resultadosPorPerfil;
+    private Votacion votacion;
 
     public int getLID() {
         return LID;
@@ -190,6 +199,10 @@ public class AccionesConsultor {
             resp = new String(cipher.doFinal(chunk));
             ioHandler.close();
             socket.close();
+            json = new JSONObject(resp);
+            votacion = new Votacion(json.getString("titulo"));
+            votacion.setFechaInicio(json.getLong("tiempo_inicioal"));
+            votacion.setFechaFin(json.getLong("tiempo_final_final"));
         } catch (IOException | JSONException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
             e.printStackTrace();
         }
@@ -257,6 +270,7 @@ public class AccionesConsultor {
                     preguntas.put(row);
                     System.out.println("FIERRO PARIENTE: " + row.toString());
                     totalDePreguntas = i;
+                    votacion.agregaPregunta(resp.getString(i));
                 }
                 ioHandler.close();
                 socket.close();
@@ -338,10 +352,33 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            JSONArray jarr = new JSONArray(new String(cipher.doFinal(chunk)));
+            json = new JSONObject(new String(cipher.doFinal(chunk)));
+            JSONArray jarr = json.getJSONArray("jarr");
+            Opcion op;
             int participantesQueRespondieronPregunta = 0;
             for (int i = 0; i < jarr.length(); i++) {
                 participantesQueRespondieronPregunta += jarr.getJSONObject(i).getInt("cantidad");
+                op = new Opcion(jarr.getJSONObject(i).getString("reactivo"));
+                op.setCantidad(jarr.getJSONObject(i).getInt("cantidad"));
+                votacion.getPreguntas().get(votacion.getPreguntas().indexOf(pregunta)).agregarOpcion(op);
+            }
+            JSONArray jPerfiles = json.getJSONArray("resultados_por_perfil");
+            JSONObject jPerfil;
+            JSONArray jResultadosPerfil;
+            resultadosPorPerfil = new ArrayList<>();
+            ResultadoPorPerfil rpp;
+            Map<String, Integer> mapaResultadosPorPerfil;
+            for(int i=0; i< jPerfiles.length(); i++){
+                jPerfil = jPerfiles.getJSONObject(i);
+                rpp = new ResultadoPorPerfil();
+                rpp.setPerfil(jPerfil.getString("perfil"));
+                jResultadosPerfil = jPerfil.getJSONArray("resultados");
+                mapaResultadosPorPerfil = new TreeMap<>();
+                for(int j=0; j<jResultadosPerfil.length(); j++){
+                    mapaResultadosPorPerfil.put(jResultadosPerfil.getJSONObject(j).getString("reactivo"), jResultadosPerfil.getJSONObject(j).getInt("cantidad"));
+                }
+                rpp.setResultados(mapaResultadosPorPerfil);
+                resultadosPorPerfil.add(rpp);
             }
             result = new JSONObject();
             result.put("participantes", participantesQueRespondieronPregunta); // Es el número total de participantes por pregunta.
