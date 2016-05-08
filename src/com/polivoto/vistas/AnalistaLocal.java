@@ -64,13 +64,12 @@ public class AnalistaLocal extends JFrame {
         initComponents();
         cardsPreguntas = new CardLayout();
         panelPreguntas.setLayout(cardsPreguntas);
-
         setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
-
         panelVotando.setVisible(true);
         Panel3.setVisible(false);
         try {
             String startupDataString = this.accionesConsultor.consultaParametrosIniciales();
+            this.accionesConsultor.consultaPreguntas();
             System.out.println("Startup data: " + startupDataString);
             json = new JSONObject(startupDataString);
             cronometro = new Cronometro(lblhrs, lblmin, lblseg, json.getLong("tiempo_final"));
@@ -82,7 +81,7 @@ public class AnalistaLocal extends JFrame {
             votos = json.getInt("votos");
             nombreStartUp = json.getString("lugar");
             System.out.println("" + json.toString());
-        } catch (JSONException ignore) {
+        } catch (IOException | JSONException ignore) {
             ignore.printStackTrace();
         }
         // Obtener el nombre de la zona
@@ -155,11 +154,15 @@ public class AnalistaLocal extends JFrame {
                     socket.close();
                     switch (json.getInt("action")) {
                         case 1:
+                            // aquí debemos obtener la cantidad de participantes
+                            // al momento.
                             System.out.println("Voto nuevo");
-                            escuchar.actualizarConteo(true);
+                            escuchar.actualizarConteo(json.getInt("participantes")); // Necesita ajuste para incorporar valor leido.
                             break;
                         case 2:
-                            System.out.println("Proceso Finalizado");
+                            System.out.println("Proceso Finalizado\n"+json.toString());
+                            accionesConsultor.armarConteoOpciones(json);
+                            incommingRequestHandler.terminarConexion();
                             cardLayout.show(panelMain, "3");
                             escuchar.setRecibiendo(false);
                             for (int i = 0; i < accionesConsultor.getPreguntas().length(); i++) {

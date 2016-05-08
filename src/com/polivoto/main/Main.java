@@ -14,6 +14,6 @@ import com.polivoto.vistas.Acceso;
  */
 public class Main {
     public static void main (String[] args){
-        new Acceso().iniciar();
+        new Acceso(args).iniciar();
     }
 }

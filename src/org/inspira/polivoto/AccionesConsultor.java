@@ -29,8 +29,6 @@ import com.polivoto.shared.ResultadoPorPerfil;
 import com.polivoto.shared.Votacion;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 
 public class AccionesConsultor {
 
@@ -56,8 +54,8 @@ public class AccionesConsultor {
     public int getLID() {
         return LID;
     }
-    
-    public String getHost(){
+
+    public String getHost() {
         return HOST;
     }
 
@@ -122,8 +120,8 @@ public class AccionesConsultor {
          }
          */
     }
-    
-    public void consultaDetallesDeVotacion(String titulo){
+
+    public void consultaDetallesDeVotacion(String titulo) {
         try {
             socket = new Socket(HOST, 23543);
             ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
@@ -153,7 +151,7 @@ public class AccionesConsultor {
         }
     }
 
-    public void consultaVotacionesDisponibles() throws IOException{
+    public void consultaVotacionesDisponibles() throws IOException {
         try {
             socket = new Socket(HOST, 23543);
             ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
@@ -186,6 +184,13 @@ public class AccionesConsultor {
             /**
              * ** Prueba consulta de boleta ***
              */
+            synchronized(this){
+                try{
+                    wait(12000);
+                }catch(InterruptedException e){
+                    e.printStackTrace();
+                }
+            }
             socket = new Socket(HOST, 23543);
             ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
             ioHandler.writeInt(LID);
@@ -201,7 +206,7 @@ public class AccionesConsultor {
             socket.close();
             json = new JSONObject(resp);
             votacion = new Votacion(json.getString("titulo"));
-            votacion.setFechaInicio(json.getLong("tiempo_inicioal"));
+            votacion.setFechaInicio(json.getLong("tiempo_inicial"));
             votacion.setFechaFin(json.getLong("tiempo_final_final"));
         } catch (IOException | JSONException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
             e.printStackTrace();
@@ -240,15 +245,39 @@ public class AccionesConsultor {
         return result;
     }
 
-    public synchronized void consultaPreguntas() throws IOException{
+    public synchronized void dummyAskForQuiz() {
+        try {
+            socket = new Socket(HOST, 23543);
+            ioHandler
+                    = new IOHandler(new DataInputStream(socket.getInputStream()),
+                            new DataOutputStream(socket.getOutputStream()));
+            ioHandler.writeInt(LID);
+            json = new JSONObject();
+            json.put("action", 6);
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            chunk = cipher.doFinal(json.toString().getBytes());
+            ioHandler.sendMessage(chunk);
+            chunk = ioHandler.handleIncommingMessage();
+            cipher.init(Cipher.DECRYPT_MODE, secretKey);
+            JSONArray resp = new JSONArray(new String(cipher.doFinal(chunk)));
+            System.out.println("Preguntas de votacion actual:\n" + resp);
+            socket.close();
+            ioHandler.close();
+            socket.close();
+        } catch (IOException | JSONException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, e);
+        }
+    }
+
+    public synchronized void consultaPreguntas() throws IOException {
         if (preguntas == null) {
             try {
                 /**
                  * ** Prueba consulta preguntas ***
                  */
                 socket = new Socket(HOST, 23543);
-                ioHandler = 
-                        new IOHandler(new DataInputStream(socket.getInputStream()),
+                ioHandler
+                        = new IOHandler(new DataInputStream(socket.getInputStream()),
                                 new DataOutputStream(socket.getOutputStream()));
                 ioHandler.writeInt(LID);
                 json = new JSONObject();
@@ -318,9 +347,64 @@ public class AccionesConsultor {
         }
         return result;
     }
+    
+    public void armarConteoOpciones(JSONObject jsonConPreguntas){
+        try {
+            /**
+             * ** Prueba consulta preguntas ***
+             */
+            System.out.println("We are not gonna take it!!");
+            conteoOpcionesPregunta = new JSONArray();
+            resultadosPorPerfil = new ArrayList<>();
+            for (int i = 0; i < jsonConPreguntas.getInt("total_preguntas"); i++) {
+                conteoOpcionesPregunta.put(armarConteoOpcionesPregunta(jsonConPreguntas.getString("pregunta_" + (i+1)), jsonConPreguntas.getJSONObject("resultados_" + (i+1))));
+            }
+        } catch (JSONException e) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, e);
+        }
+    }
+    
+    public JSONObject armarConteoOpcionesPregunta(String pregunta, JSONObject json){
+        JSONObject result = null;
+        System.out.println("La pregunta en cuestión es: " + pregunta);
+        try{
+            JSONArray jarr = json.getJSONArray("resultados_normal");
+            Opcion op;
+            int participantesQueRespondieronPregunta = 0;
+            for (int i = 0; i < jarr.length(); i++) {
+                participantesQueRespondieronPregunta += jarr.getJSONObject(i).getInt("cantidad");
+                op = new Opcion(jarr.getJSONObject(i).getString("reactivo"));
+                op.setCantidad(jarr.getJSONObject(i).getInt("cantidad"));
+                votacion.getPreguntas().get(votacion.buscaPregunta(pregunta)).agregarOpcion(op);
+            }
+            JSONArray jPerfiles = json.getJSONArray("resultados_por_perfil");
+            JSONObject jPerfil;
+            JSONArray jResultadosPerfil;
+            ResultadoPorPerfil rpp;
+            List<Opcion> opcionesPorPerfil;
+            for (int i = 0; i < jPerfiles.length(); i++) {
+                jPerfil = jPerfiles.getJSONObject(i);
+                rpp = new ResultadoPorPerfil();
+                rpp.setPerfil(jPerfil.getString("perfil"));
+                jResultadosPerfil = jPerfil.getJSONArray("resultados");
+                opcionesPorPerfil = new ArrayList<>();
+                for (int j = 0; j < jResultadosPerfil.length(); j++) {
+                    opcionesPorPerfil.add(new Opcion(jResultadosPerfil.getJSONObject(j).getString("reactivo"), jResultadosPerfil.getJSONObject(j).getInt("cantidad")));
+                }
+                rpp.setOpciones(opcionesPorPerfil);
+                resultadosPorPerfil.add(rpp);
+            }
+            result = new JSONObject();
+            result.put("participantes", participantesQueRespondieronPregunta); // Es el número total de participantes por pregunta.
+            result.put("conteo", jarr); // Arreglo de conteo de votos por opción
+            System.out.println("# Participación sobre \"" + pregunta + "\": " + participantesQueRespondieronPregunta);
+        }catch(JSONException e){
+            e.printStackTrace();
+        }
+        return result;
+    }
 
     public synchronized void consultaConteoOpciones() {
-
         try {
             /**
              * ** Prueba consulta preguntas ***
@@ -353,7 +437,7 @@ public class AccionesConsultor {
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
             json = new JSONObject(new String(cipher.doFinal(chunk)));
-            JSONArray jarr = json.getJSONArray("jarr");
+            JSONArray jarr = json.getJSONArray("resultados_normal");
             Opcion op;
             int participantesQueRespondieronPregunta = 0;
             for (int i = 0; i < jarr.length(); i++) {
@@ -365,16 +449,15 @@ public class AccionesConsultor {
             JSONArray jPerfiles = json.getJSONArray("resultados_por_perfil");
             JSONObject jPerfil;
             JSONArray jResultadosPerfil;
-            List<ResultadoPorPerfil> resultadosPorPerfil = new ArrayList<>();
             ResultadoPorPerfil rpp;
             List<Opcion> opcionesPorPerfil;
-            for(int i=0; i< jPerfiles.length(); i++){
+            for (int i = 0; i < jPerfiles.length(); i++) {
                 jPerfil = jPerfiles.getJSONObject(i);
                 rpp = new ResultadoPorPerfil();
                 rpp.setPerfil(jPerfil.getString("perfil"));
                 jResultadosPerfil = jPerfil.getJSONArray("resultados");
                 opcionesPorPerfil = new ArrayList<>();
-                for(int j=0; j<jResultadosPerfil.length(); j++){
+                for (int j = 0; j < jResultadosPerfil.length(); j++) {
                     opcionesPorPerfil.add(new Opcion(jResultadosPerfil.getJSONObject(j).getString("reactivo"), jResultadosPerfil.getJSONObject(j).getInt("cantidad")));
                 }
                 rpp.setOpciones(opcionesPorPerfil);
@@ -405,16 +488,16 @@ public class AccionesConsultor {
     public JSONArray getPreguntas() {
         return preguntas;
     }
-    
-    public void setPreguntas(JSONArray preguntas){
+
+    public void setPreguntas(JSONArray preguntas) {
         this.preguntas = preguntas;
     }
 
     public JSONArray getConteoOpcionesPregunta() {
         return conteoOpcionesPregunta;
     }
-    
-    public void setConteoOpcionesPregunta(JSONArray conteoOpcionesPregunta){
+
+    public void setConteoOpcionesPregunta(JSONArray conteoOpcionesPregunta) {
         this.conteoOpcionesPregunta = conteoOpcionesPregunta;
     }
 

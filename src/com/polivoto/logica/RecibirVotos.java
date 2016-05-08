@@ -56,21 +56,18 @@ public class RecibirVotos {
         this.poblacion = poblacion;
         this.pnl_consulta = consulta;
         this.pnl_espera = espera;
-        actualizarConteo(false);
+        actualizarConteo(votos);
     }
     
-    public void actualizarConteo(boolean conIncremento){
+    public void actualizarConteo(int personasQueHanVotado){
         /*
         * Porcentaje
         */
-        if( conIncremento )
-            if( votos == poblacion){
-                votos++;
-                poblacion++;
-            }else{
-                votos++;
-            }
-        lblvotos_totales.setText(""+votos);
+        if( votos >= poblacion )
+            poblacion = votos = personasQueHanVotado;
+        else
+            votos = personasQueHanVotado;
+        lblvotos_totales.setText(String.valueOf(personasQueHanVotado));
         porcentaje = (votos*100)/(poblacion == 0 ? 1 : poblacion);
         if(porcentaje >= 100.0 || (porcentaje%1) == 0)
             decimales = new DecimalFormat("0");

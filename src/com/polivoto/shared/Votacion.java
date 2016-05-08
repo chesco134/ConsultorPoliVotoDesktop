@@ -41,7 +41,7 @@ public class Votacion implements Serializable {
         return preguntas;
     }
 
-    private int buscaPregunta(String pregunta){
+    public int buscaPregunta(String pregunta){
         int posicion = -1;
         for(int i=0; i<preguntas.size(); i++)
             if(preguntas.get(i).getTitulo().equals(pregunta)){

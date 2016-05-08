@@ -54,7 +54,7 @@ public class Datos {
     public Datos(AccionesConsultor ac, int pox) {
         this.ac = ac;
         this.pox = pox;
-        ac.consultaConteoOpciones();
+//        ac.consultaConteoOpciones();
         this.rotating = false;
         setcolors();
     }

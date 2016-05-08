@@ -34,11 +34,25 @@ public class Acceso extends javax.swing.JFrame {
 
     private AccionesConsultor accionesConsultor;
     private IncommingRequestHandler incommingRequestHandler;
+    private String host;
+    private String usrName;
+    private String pwd;
+
+    public Acceso(String[] args) {
+        if (args.length > 0) {
+            host = args[0];
+        }
+        myStartup();
+    }
 
     /**
      * Creates new form Results
      */
     public Acceso() {
+        myStartup();
+    }
+
+    private void myStartup() {
         initComponents();
         PromptSupport.setPrompt("Consultor", usrTextField);
         PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, usrTextField);
@@ -301,11 +315,11 @@ public class Acceso extends javax.swing.JFrame {
         try {
             accionesConsultor = new AccionesConsultor(host, usrName, pwd);
             if (accionesConsultor.getLID() > -1) {
-                success = 1;
-                accionesConsultor.consultaPreguntas();
+                accionesConsultor.dummyAskForQuiz();
                 incommingRequestHandler = new IncommingRequestHandler();
                 incommingRequestHandler.setAccionesConsultor(accionesConsultor);
                 incommingRequestHandler.start(); // We need to keep track of this object.
+                success = 1;
             } else {
                 success = 0;
             }
@@ -313,6 +327,7 @@ public class Acceso extends javax.swing.JFrame {
             Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
             success = -1;
         } catch (IOException e) {
+            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, e);
             try {
                 accionesConsultor.consultaVotacionesDisponibles();
                 success = 2;
@@ -325,77 +340,85 @@ public class Acceso extends javax.swing.JFrame {
     }
 
     private void botonClicked() {
-        String usrName = usrTextField.getText();
-        String pwd = new String(pwdTextField.getPassword());
-        AdminConexionAutomatica admin;
-        admin = new AdminConexionAutomatica();
-        TareaDeConexion.EscuchaDeConexion escuchaDeConexion;
-        escuchaDeConexion = new TareaDeConexion.EscuchaDeConexion() {
-            @Override
-            public void conexionExitosa(TareaDeConexion tarea) {
-                admin.cancelRunning(tarea);
-                System.out.println("Done.\nNow connecting...");
-                switch (connect(tarea.getHost(), usrName, pwd)) {
-                    case 2:
-                        try {
-                            JSONObject json = new JSONObject(accionesConsultor.getVotacionesDisponibles());
-                            JSONArray array = json.getJSONArray("titulos");
-                            String[] titulos = new String[array.length()];
-                            for (int i = 0; i < titulos.length; i++) {
-                                titulos[i] = array.getString(i);
-                            }
-                            String tituloSeleccionado
-                                    = (String) JOptionPane.showInputDialog(null, "Por favor seleccione un título de votación:",
-                                            "Votaciones hechas", JOptionPane.QUESTION_MESSAGE,
-                                            null, titulos, titulos[0]);
-                            accionesConsultor.consultaDetallesDeVotacion(tituloSeleccionado);
-                            String detallesVotacion = accionesConsultor.getDetallesDeVotacion();
-                            json = new JSONObject(detallesVotacion);
-                            JSONArray jpreguntas = json.getJSONArray("preguntas");
-                            accionesConsultor.setPreguntas(jpreguntas);
-                            JSONArray extra = new JSONArray();
-                            JSONObject result;
-                            for (int j = 0; j < jpreguntas.length(); j++) {
-                                int participantesQueRespondieronPregunta = 0;
-                                for (int i = 0; i < jpreguntas.getJSONObject(j).getJSONArray("opciones").length(); i++) {
-                                    participantesQueRespondieronPregunta += jpreguntas.getJSONObject(j).getJSONArray("opciones").getJSONObject(i).getInt("cantidad");
-                                }
-                                result = new JSONObject();
-                                result.put("participantes", participantesQueRespondieronPregunta); // Es el número total de participantes por pregunta.
-                                result.put("conteo", jpreguntas.getJSONObject(j).getJSONArray("opciones")); // Arreglo de conteo de votos por opción
-                                extra.put(result);
-                            }
-                            accionesConsultor.setConteoOpcionesPregunta(extra);
-                            for (int i = 0; i < jpreguntas.length(); i++) {
-                                Consultor consultor = new Consultor(i, accionesConsultor, "Sco");
-                                consultor.iniciar();
-                            }
-                            setVisible(false);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                        break;
-                    case 1:
-                        continuar();
-                        break;
-                    case 0:
-                        usuarioInvalido();
-                        break;
-                    case -1:
-                        sinConexion();
-                        break;
+        usrName = usrTextField.getText();
+        pwd = new String(pwdTextField.getPassword());
+        if (host == null) {
+            AdminConexionAutomatica admin;
+            admin = new AdminConexionAutomatica();
+            TareaDeConexion.EscuchaDeConexion escuchaDeConexion;
+            escuchaDeConexion = new TareaDeConexion.EscuchaDeConexion() {
+                @Override
+                public void conexionExitosa(TareaDeConexion tarea) {
+                    admin.cancelRunning(tarea);
+                    whatToDoWhenWeHaveTheHost(tarea.getHost());
                 }
-                loading.removeLoadingPanel();
-            }
 
-            @Override
-            public void conexionFallida() {
-                loading.removeLoadingPanel();
-            }
-        };
-        admin.setEscuchaConexion(escuchaDeConexion);
-        admin.start();
-        System.out.println("Iniciado servicio de búsqueda.");
+                @Override
+                public void conexionFallida() {
+                    loading.removeLoadingPanel();
+                }
+            };
+            admin.setEscuchaConexion(escuchaDeConexion);
+            admin.start();
+            System.out.println("Iniciado servicio de búsqueda.");
+        } else {
+            whatToDoWhenWeHaveTheHost(host);
+        }
+    }
+
+    private void whatToDoWhenWeHaveTheHost(String host) {
+        System.out.println("Done.\nNow connecting...");
+        switch (connect(host, usrName, pwd)) {
+            case 2:
+                try {
+                    JSONObject json = new JSONObject(accionesConsultor.getVotacionesDisponibles());
+                    JSONArray array = json.getJSONArray("titulos");
+                    String[] titulos = new String[array.length()];
+                    for (int i = 0; i < titulos.length; i++) {
+                        titulos[i] = array.getString(i);
+                    }
+                    String tituloSeleccionado
+                            = (String) JOptionPane.showInputDialog(null, "Por favor seleccione un título de votación:",
+                                    "Votaciones hechas", JOptionPane.QUESTION_MESSAGE,
+                                    null, titulos, titulos[0]);
+                    accionesConsultor.consultaDetallesDeVotacion(tituloSeleccionado);
+                    String detallesVotacion = accionesConsultor.getDetallesDeVotacion();
+                    json = new JSONObject(detallesVotacion);
+                    JSONArray jpreguntas = json.getJSONArray("preguntas");
+                    accionesConsultor.setPreguntas(jpreguntas);
+                    JSONArray extra = new JSONArray();
+                    JSONObject result;
+                    for (int j = 0; j < jpreguntas.length(); j++) {
+                        int participantesQueRespondieronPregunta = 0;
+                        for (int i = 0; i < jpreguntas.getJSONObject(j).getJSONArray("opciones").length(); i++) {
+                            participantesQueRespondieronPregunta += jpreguntas.getJSONObject(j).getJSONArray("opciones").getJSONObject(i).getInt("cantidad");
+                        }
+                        result = new JSONObject();
+                        result.put("participantes", participantesQueRespondieronPregunta); // Es el número total de participantes por pregunta.
+                        result.put("conteo", jpreguntas.getJSONObject(j).getJSONArray("opciones")); // Arreglo de conteo de votos por opción
+                        extra.put(result);
+                    }
+                    accionesConsultor.setConteoOpcionesPregunta(extra);
+                    for (int i = 0; i < jpreguntas.length(); i++) {
+                        Consultor consultor = new Consultor(i, accionesConsultor, "Sco");
+                        consultor.iniciar();
+                    }
+                    setVisible(false);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                break;
+            case 1:
+                continuar();
+                break;
+            case 0:
+                usuarioInvalido();
+                break;
+            case -1:
+                sinConexion();
+                break;
+        }
+        loading.removeLoadingPanel();
     }
 
     private void usuarioInvalido() {
