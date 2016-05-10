@@ -20,8 +20,10 @@ import org.json.JSONException;
 import com.polivoto.threading.IncommingRequestHandler;
 import com.polivoto.threading.TareaDeConexion;
 import com.polivoto.vistas.acciones.Cargando;
+import java.net.Socket;
 import javax.swing.JOptionPane;
 import org.inspira.polivoto.AccionesConsultor;
+import org.inspira.polivoto.proveedores.ProveedorDeArchivo;
 import org.jdesktop.swingx.prompt.PromptSupport;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -35,12 +37,19 @@ public class Acceso extends javax.swing.JFrame {
     private AccionesConsultor accionesConsultor;
     private IncommingRequestHandler incommingRequestHandler;
     private String host;
+    private String remoteHost;
     private String usrName;
     private String pwd;
 
     public Acceso(String[] args) {
-        if (args.length > 0) {
+        if (args.length > 1) {
             host = args[0];
+            remoteHost = args[1];
+        } else if (args.length > 0) {
+            remoteHost = args[0];
+        } else {
+            remoteHost = "localhost";
+            host = null;
         }
         myStartup();
     }
@@ -220,7 +229,6 @@ public class Acceso extends javax.swing.JFrame {
 
     private void botonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_botonMouseClicked
         (new Thread(new Loading())).start();
-
         botonClicked();
     }//GEN-LAST:event_botonMouseClicked
 
@@ -236,7 +244,6 @@ public class Acceso extends javax.swing.JFrame {
         char c = evt.getKeyChar();
         if (c == '\n') {
             (new Thread(new Loading())).start();
-
             botonClicked();
         }
     }//GEN-LAST:event_usrTextFieldKeyPressed
@@ -245,7 +252,6 @@ public class Acceso extends javax.swing.JFrame {
         char c = evt.getKeyChar();
         if (c == '\n') {
             (new Thread(new Loading())).start();
-
             botonClicked();
         }
     }//GEN-LAST:event_pwdTextFieldKeyPressed
@@ -303,122 +309,80 @@ public class Acceso extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
     Cargando loading = new Cargando(this);
 
-    private void continuar() {
-        AnalistaLocal analistaLocal = new AnalistaLocal(accionesConsultor);
-        analistaLocal.setIncommingRequestHandler(incommingRequestHandler);
-        analistaLocal.init();
-        dispose();
-    }
-
-    private int connect(String host, String usrName, String pwd) {
-        int success;
+    private void connect(String host, String usrName, String pwd) {
         try {
             accionesConsultor = new AccionesConsultor(host, usrName, pwd);
-            if (accionesConsultor.getLID() > -1) {
-                accionesConsultor.dummyAskForQuiz();
-                incommingRequestHandler = new IncommingRequestHandler();
-                incommingRequestHandler.setAccionesConsultor(accionesConsultor);
-                incommingRequestHandler.start(); // We need to keep track of this object.
-                success = 1;
-            } else {
-                success = 0;
-            }
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | JSONException ex) {
+            incommingRequestHandler = new IncommingRequestHandler();
+            incommingRequestHandler.setAccionesConsultor(accionesConsultor, remoteHost);
+            incommingRequestHandler.start(); // We need to keep track of this object.
+            dispose();
+        } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | JSONException ex) {
+            loading.removeLoadingPanel();
             Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-            success = -1;
-        } catch (IOException e) {
-            Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, e);
-            try {
-                accionesConsultor.consultaVotacionesDisponibles();
-                success = 2;
-            } catch (IOException ex) {
-                Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-                success = -1;
+            if (ex.getMessage().contains("no route to host") || ex.getMessage().contains("rehusada")) {
+                sinConexion();    
+            } else {
+                usuarioInvalido();
             }
         }
-        return success;
     }
 
     private void botonClicked() {
         usrName = usrTextField.getText();
         pwd = new String(pwdTextField.getPassword());
         if (host == null) {
-            AdminConexionAutomatica admin;
-            admin = new AdminConexionAutomatica();
-            TareaDeConexion.EscuchaDeConexion escuchaDeConexion;
-            escuchaDeConexion = new TareaDeConexion.EscuchaDeConexion() {
-                @Override
-                public void conexionExitosa(TareaDeConexion tarea) {
-                    admin.cancelRunning(tarea);
-                    whatToDoWhenWeHaveTheHost(tarea.getHost());
-                }
+            host = ProveedorDeArchivo.leerHost();
+            if (host == null) {
+                AdminConexionAutomatica admin;
+                admin = new AdminConexionAutomatica();
+                TareaDeConexion.EscuchaDeConexion escuchaDeConexion;
+                escuchaDeConexion = new TareaDeConexion.EscuchaDeConexion() {
+                    @Override
+                    public void conexionExitosa(TareaDeConexion tarea) {
+                        admin.cancelRunning(tarea);
+                        ProveedorDeArchivo.escribirHost(tarea.getHost());
+                        whatToDoWhenWeHaveTheHost(tarea.getHost());
+                    }
 
-                @Override
-                public void conexionFallida() {
-                    loading.removeLoadingPanel();
-                }
-            };
-            admin.setEscuchaConexion(escuchaDeConexion);
-            admin.start();
-            System.out.println("Iniciado servicio de búsqueda.");
+                    @Override
+                    public void conexionFallida() {
+                        loading.removeLoadingPanel();
+                    }
+                };
+                admin.setEscuchaConexion(escuchaDeConexion);
+                admin.start();
+                System.out.println("Servicio de búsqueda iniciado.");
+            } else {
+                new FirstServerConnection(host).start();
+            }
         } else {
+            new FirstServerConnection(host).start();
+        }
+    }
+
+    class FirstServerConnection extends Thread {
+
+        private String host;
+
+        public FirstServerConnection(String host) {
+            this.host = host;
+        }
+
+        @Override
+        public void run() {
+            try {
+                Socket socket = new Socket(host, 23543);
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             whatToDoWhenWeHaveTheHost(host);
         }
     }
 
     private void whatToDoWhenWeHaveTheHost(String host) {
-        System.out.println("Done.\nNow connecting...");
-        switch (connect(host, usrName, pwd)) {
-            case 2:
-                try {
-                    JSONObject json = new JSONObject(accionesConsultor.getVotacionesDisponibles());
-                    JSONArray array = json.getJSONArray("titulos");
-                    String[] titulos = new String[array.length()];
-                    for (int i = 0; i < titulos.length; i++) {
-                        titulos[i] = array.getString(i);
-                    }
-                    String tituloSeleccionado
-                            = (String) JOptionPane.showInputDialog(null, "Por favor seleccione un título de votación:",
-                                    "Votaciones hechas", JOptionPane.QUESTION_MESSAGE,
-                                    null, titulos, titulos[0]);
-                    accionesConsultor.consultaDetallesDeVotacion(tituloSeleccionado);
-                    String detallesVotacion = accionesConsultor.getDetallesDeVotacion();
-                    json = new JSONObject(detallesVotacion);
-                    JSONArray jpreguntas = json.getJSONArray("preguntas");
-                    accionesConsultor.setPreguntas(jpreguntas);
-                    JSONArray extra = new JSONArray();
-                    JSONObject result;
-                    for (int j = 0; j < jpreguntas.length(); j++) {
-                        int participantesQueRespondieronPregunta = 0;
-                        for (int i = 0; i < jpreguntas.getJSONObject(j).getJSONArray("opciones").length(); i++) {
-                            participantesQueRespondieronPregunta += jpreguntas.getJSONObject(j).getJSONArray("opciones").getJSONObject(i).getInt("cantidad");
-                        }
-                        result = new JSONObject();
-                        result.put("participantes", participantesQueRespondieronPregunta); // Es el número total de participantes por pregunta.
-                        result.put("conteo", jpreguntas.getJSONObject(j).getJSONArray("opciones")); // Arreglo de conteo de votos por opción
-                        extra.put(result);
-                    }
-                    accionesConsultor.setConteoOpcionesPregunta(extra);
-                    for (int i = 0; i < jpreguntas.length(); i++) {
-                        Consultor consultor = new Consultor(i, accionesConsultor, "Sco");
-                        consultor.iniciar();
-                    }
-                    setVisible(false);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                break;
-            case 1:
-                continuar();
-                break;
-            case 0:
-                usuarioInvalido();
-                break;
-            case -1:
-                sinConexion();
-                break;
-        }
-        loading.removeLoadingPanel();
+        System.out.println("Now connecting...");
+        connect(host, usrName, pwd);
     }
 
     private void usuarioInvalido() {

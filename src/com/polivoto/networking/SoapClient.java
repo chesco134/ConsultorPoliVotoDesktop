@@ -30,7 +30,7 @@ public class SoapClient {
     private final JSONObject json;
     
     public SoapClient(JSONObject json) {
-        this.json = new JSONObject(json);
+        this.json = json;
     }
     
     public String main() throws SOAPException, IOException {

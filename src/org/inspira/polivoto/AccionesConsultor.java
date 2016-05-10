@@ -186,11 +186,12 @@ public class AccionesConsultor {
              */
             synchronized(this){
                 try{
-                    wait(12000);
+                    wait(1000);
                 }catch(InterruptedException e){
                     e.printStackTrace();
                 }
             }
+            System.out.println("HOST: " + HOST);
             socket = new Socket(HOST, 23543);
             ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
             ioHandler.writeInt(LID);
