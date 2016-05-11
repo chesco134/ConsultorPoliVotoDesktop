@@ -46,7 +46,7 @@ public class AccionesConsultor {
     private JSONObject startupData;
     private int totalDePreguntas;
     private String usrName;
-    private String votacionesDisponibles;
+    private JSONArray votacionesDisponibles;
     private String detallesDeVotacion;
     private List<ResultadoPorPerfil> resultadosPorPerfil;
     private Votacion votacion;
@@ -121,14 +121,14 @@ public class AccionesConsultor {
          */
     }
 
-    public void consultaDetallesDeVotacion(String titulo) {
+    public void consultaDetallesDeVotacion(int idVotacion) {
         try {
             socket = new Socket(HOST, 23543);
             ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
             ioHandler.writeInt(LID);
             json = new JSONObject();
             json.put("action", 18);// La acción pertinente para llevar a cabo la solicitud.
-            json.put("titulo", titulo);
+            json.put("idVotacion", idVotacion);
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
             chunk = cipher.doFinal(json.toString().getBytes());
             ioHandler.sendMessage(chunk);
@@ -163,7 +163,7 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            votacionesDisponibles = new String(cipher.doFinal(chunk));
+            votacionesDisponibles = new JSONArray(new String(cipher.doFinal(chunk)));
             System.out.println("Recibimos: " + votacionesDisponibles);
             ioHandler.close();
             socket.close();
@@ -510,7 +510,7 @@ public class AccionesConsultor {
         return totalDePreguntas;
     }
 
-    public String getVotacionesDisponibles() {
+    public JSONArray getVotacionesDisponibles() {
         return votacionesDisponibles;
     }
 

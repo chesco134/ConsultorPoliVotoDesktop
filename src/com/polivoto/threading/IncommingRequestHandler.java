@@ -21,6 +21,9 @@ import com.polivoto.networking.SoapClient;
 import com.polivoto.vistas.AnalistaLocal;
 import com.polivoto.vistas.Consultor;
 import java.net.Inet4Address;
+import java.util.Map;
+import java.util.TreeMap;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import org.inspira.jcapiz.polivoto.pojo.Votacion;
 import org.inspira.polivoto.proveedores.ProveedorDeMarshalling;
@@ -36,8 +39,10 @@ public class IncommingRequestHandler extends Thread {
     private AccionesConsultor accionesConsultor;
     private ServerSocket server;
     private String remoteHost;
+    private JFrame mainFrame;
 
-    public void setAccionesConsultor(AccionesConsultor accionesConsultor, String remoteHost) {
+    public void setAccionesConsultor(JFrame mainFrame, AccionesConsultor accionesConsultor, String remoteHost) {
+        this.mainFrame = mainFrame;
         this.accionesConsultor = accionesConsultor;
         this.remoteHost = remoteHost;
     }
@@ -167,7 +172,7 @@ public class IncommingRequestHandler extends Thread {
                             System.out.println("Es el caso 6! json: " + json.toString());
                             SoapClient handler = new SoapClient(json);
                             handler.setHost(remoteHost);
-                            resp = handler.main();
+                            handler.main();
                             System.out.println("We got: " + resp);
                         } catch (SOAPException | IOException e) {
                             resp = "¡Listo!".equals(resp) ? "Error en 6" : resp.concat(", 6");
@@ -178,17 +183,30 @@ public class IncommingRequestHandler extends Thread {
                         socket.close();
                         try {
                             accionesConsultor.consultaVotacionesDisponibles();
-                            json = new JSONObject(accionesConsultor.getVotacionesDisponibles());
-                            JSONArray array = json.getJSONArray("titulos");
-                            String[] titulos = new String[array.length()];
-                            for (int i = 0; i < titulos.length; i++) {
-                                titulos[i] = array.getString(i);
+                            JSONArray array = accionesConsultor.getVotacionesDisponibles();
+                            Map<String,Integer> elementos = new TreeMap<>();
+                            Map<String, Integer> repetidos = new TreeMap<>();
+                            Integer cantidad;
+                            String textoAlterno;
+                            boolean containsKey;
+                            for (int i = 0; i < array.length(); i++) {
+                                json = array.getJSONObject(i);
+                                containsKey = elementos.containsKey(json.getString("titulo"));
+                                if(containsKey){
+                                    cantidad = repetidos.get(json.getString("titulo"));
+                                    cantidad = cantidad == null ? 1 : cantidad + 1;
+                                    repetidos.put(json.getString("titulo"), cantidad);
+                                    textoAlterno = json.getString("titulo") + (String.format("(%d)", cantidad));
+                                    elementos.put(textoAlterno, json.getInt("idVotacion"));
+                                }else{
+                                    elementos.put(json.getString("titulo"), json.getInt("idVotacion"));
+                                }
                             }
                             String tituloSeleccionado
                                     = (String) JOptionPane.showInputDialog(null, "Por favor seleccione un título de votación:",
                                             "Votaciones hechas", JOptionPane.QUESTION_MESSAGE,
-                                            null, titulos, titulos[0]);
-                            accionesConsultor.consultaDetallesDeVotacion(tituloSeleccionado);
+                                            null, elementos.keySet().toArray(new String[]{}), elementos.keySet().iterator().next());
+                            accionesConsultor.consultaDetallesDeVotacion(elementos.get(tituloSeleccionado));
                             String detallesVotacion = accionesConsultor.getDetallesDeVotacion();
                             json = new JSONObject(detallesVotacion);
                             JSONArray jpreguntas = json.getJSONArray("preguntas");
@@ -221,6 +239,8 @@ public class IncommingRequestHandler extends Thread {
                         break;
                     case 11: // Carga de secretos
                         try {
+                            System.out.println("contenido_cifrado: " + json.getString("contenido_cifrado"));
+                            System.out.println("secreto_cifrado: " + json.getString("secreto_cifrado"));
                             json.put("action", 9);
                             System.out.println("Es el caso 9! json: " + json.toString());
                             SoapClient handler = new SoapClient(json);

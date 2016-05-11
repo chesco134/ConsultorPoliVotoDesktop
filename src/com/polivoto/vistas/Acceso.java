@@ -25,8 +25,6 @@ import javax.swing.JOptionPane;
 import org.inspira.polivoto.AccionesConsultor;
 import org.inspira.polivoto.proveedores.ProveedorDeArchivo;
 import org.jdesktop.swingx.prompt.PromptSupport;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 /**
  *
@@ -312,18 +310,18 @@ public class Acceso extends javax.swing.JFrame {
     private void connect(String host, String usrName, String pwd) {
         try {
             accionesConsultor = new AccionesConsultor(host, usrName, pwd);
-            incommingRequestHandler = new IncommingRequestHandler();
-            incommingRequestHandler.setAccionesConsultor(accionesConsultor, remoteHost);
-            incommingRequestHandler.start(); // We need to keep track of this object.
-            dispose();
+            if(accionesConsultor.getLID() <= 0){
+                usuarioInvalido();
+            }else{
+                incommingRequestHandler = new IncommingRequestHandler();
+                incommingRequestHandler.setAccionesConsultor(this, accionesConsultor, remoteHost);
+                incommingRequestHandler.start(); // We need to keep track of this object.
+                setVisible(false);
+            }
         } catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException | JSONException ex) {
             loading.removeLoadingPanel();
             Logger.getLogger(Acceso.class.getName()).log(Level.SEVERE, null, ex);
-            if (ex.getMessage().contains("no route to host") || ex.getMessage().contains("rehusada")) {
-                sinConexion();    
-            } else {
-                usuarioInvalido();
-            }
+            sinConexion();
         }
     }
 

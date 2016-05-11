@@ -162,7 +162,7 @@ public class AnalistaLocal extends JFrame {
                         case 2:
                             System.out.println("Proceso Finalizado\n"+json.toString());
                             accionesConsultor.armarConteoOpciones(json);
-                            incommingRequestHandler.terminarConexion();
+                            //incommingRequestHandler.terminarConexion();
                             cardLayout.show(panelMain, "3");
                             escuchar.setRecibiendo(false);
                             for (int i = 0; i < accionesConsultor.getPreguntas().length(); i++) {
