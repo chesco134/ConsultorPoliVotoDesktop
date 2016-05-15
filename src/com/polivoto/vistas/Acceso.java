@@ -5,6 +5,7 @@
  */
 package com.polivoto.vistas;
 
+import com.polivoto.networking.ServicioDeIPExterna;
 import com.polivoto.threading.AdminConexionAutomatica;
 import java.io.IOException;
 import java.security.InvalidKeyException;
@@ -38,17 +39,20 @@ public class Acceso extends javax.swing.JFrame {
     private String remoteHost;
     private String usrName;
     private String pwd;
+    private boolean useExternalIP;
 
     public Acceso(String[] args) {
         if (args.length > 1) {
             host = args[0];
             remoteHost = args[1];
         } else if (args.length > 0) {
-            remoteHost = args[0];
+            host = args[0];
+            remoteHost = null;
         } else {
-            remoteHost = "localhost";
+            remoteHost = null;
             host = null;
         }
+        useExternalIP = remoteHost == null;
         myStartup();
     }
 
@@ -314,7 +318,7 @@ public class Acceso extends javax.swing.JFrame {
                 usuarioInvalido();
             }else{
                 incommingRequestHandler = new IncommingRequestHandler();
-                incommingRequestHandler.setAccionesConsultor(this, accionesConsultor, remoteHost);
+                incommingRequestHandler.setAccionesConsultor(this, accionesConsultor, remoteHost, useExternalIP);
                 incommingRequestHandler.start(); // We need to keep track of this object.
                 setVisible(false);
             }

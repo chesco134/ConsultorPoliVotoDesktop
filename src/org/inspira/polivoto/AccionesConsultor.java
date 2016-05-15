@@ -29,6 +29,7 @@ import com.polivoto.shared.ResultadoPorPerfil;
 import com.polivoto.shared.Votacion;
 import java.util.ArrayList;
 import java.util.List;
+import org.inspira.polivoto.proveedores.LogProvider;
 
 public class AccionesConsultor {
 
@@ -121,6 +122,40 @@ public class AccionesConsultor {
          */
     }
 
+    public synchronized byte[] cipherMessage(String mensaje) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+        return cipher.doFinal(mensaje.getBytes());
+    }
+
+    public synchronized String decipherBytes(byte[] chunk) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+        String resp;
+        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+        resp = new String(cipher.doFinal(chunk));
+        return resp;
+    }
+
+    public String enviarPeticionDeSincronia() throws IOException {
+        String resp = null;
+        try {
+            socket = new Socket(HOST, 23543);
+            ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
+            ioHandler.writeInt(LID);
+            json = new JSONObject();
+            json.put("action", 17);// La acción pertinente para llevar a cabo la solicitud.
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+            chunk = cipher.doFinal(json.toString().getBytes());
+            ioHandler.sendMessage(chunk);
+            LogProvider.logMessage("enviarPeticionDeSincronia", "Esperando mensaje...");
+            chunk = ioHandler.handleIncommingMessage();
+            System.out.println("Recibimos: " + resp);
+            ioHandler.close();
+            socket.close();
+        } catch (JSONException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException ex) {
+            Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return resp;
+    }
+
     public void consultaDetallesDeVotacion(int idVotacion) {
         try {
             socket = new Socket(HOST, 23543);
@@ -184,13 +219,6 @@ public class AccionesConsultor {
             /**
              * ** Prueba consulta de boleta ***
              */
-            synchronized(this){
-                try{
-                    wait(1000);
-                }catch(InterruptedException e){
-                    e.printStackTrace();
-                }
-            }
             System.out.println("HOST: " + HOST);
             socket = new Socket(HOST, 23543);
             ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
@@ -232,12 +260,9 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            int veredicto = Integer.parseInt(new String(cipher.doFinal(chunk)));
-            System.out.println("Comprobando existencia de " + boleta + ": " + veredicto);
+            result = new String(cipher.doFinal(chunk));
+            System.out.println("Comprobando existencia de " + boleta + ": " + result);
             socket.close();
-            JSONObject json = new JSONObject();
-            json.put("response", veredicto);
-            result = json.toString();
             ioHandler.close();
             socket.close();
         } catch (IOException | JSONException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
@@ -246,9 +271,22 @@ public class AccionesConsultor {
         return result;
     }
 
+    public long consultaEstampaDeTiempoServidor() throws IOException {
+        /**
+         * ** Prueba consulta de boleta ***
+         */
+        socket = new Socket(HOST, 33059);
+        ioHandler = new IOHandler(new DataInputStream(socket.getInputStream()), new DataOutputStream(socket.getOutputStream()));
+        long result = ioHandler.readLong();
+        socket.close();
+        ioHandler.close();
+        socket.close();
+        return result;
+    }
+
     public synchronized void dummyAskForQuiz() {
         try {
-            socket = new Socket(HOST, 23543);
+            socket = new Socket(HOST, 33059);
             ioHandler
                     = new IOHandler(new DataInputStream(socket.getInputStream()),
                             new DataOutputStream(socket.getOutputStream()));
@@ -348,8 +386,8 @@ public class AccionesConsultor {
         }
         return result;
     }
-    
-    public void armarConteoOpciones(JSONObject jsonConPreguntas){
+
+    public void armarConteoOpciones(JSONObject jsonConPreguntas) {
         try {
             /**
              * ** Prueba consulta preguntas ***
@@ -358,17 +396,17 @@ public class AccionesConsultor {
             conteoOpcionesPregunta = new JSONArray();
             resultadosPorPerfil = new ArrayList<>();
             for (int i = 0; i < jsonConPreguntas.getInt("total_preguntas"); i++) {
-                conteoOpcionesPregunta.put(armarConteoOpcionesPregunta(jsonConPreguntas.getString("pregunta_" + (i+1)), jsonConPreguntas.getJSONObject("resultados_" + (i+1))));
+                conteoOpcionesPregunta.put(armarConteoOpcionesPregunta(jsonConPreguntas.getString("pregunta_" + (i + 1)), jsonConPreguntas.getJSONObject("resultados_" + (i + 1))));
             }
         } catch (JSONException e) {
             Logger.getLogger(AccionesConsultor.class.getName()).log(Level.SEVERE, null, e);
         }
     }
-    
-    public JSONObject armarConteoOpcionesPregunta(String pregunta, JSONObject json){
+
+    public JSONObject armarConteoOpcionesPregunta(String pregunta, JSONObject json) {
         JSONObject result = null;
         System.out.println("La pregunta en cuestión es: " + pregunta);
-        try{
+        try {
             JSONArray jarr = json.getJSONArray("resultados_normal");
             Opcion op;
             int participantesQueRespondieronPregunta = 0;
@@ -399,7 +437,7 @@ public class AccionesConsultor {
             result.put("participantes", participantesQueRespondieronPregunta); // Es el número total de participantes por pregunta.
             result.put("conteo", jarr); // Arreglo de conteo de votos por opción
             System.out.println("# Participación sobre \"" + pregunta + "\": " + participantesQueRespondieronPregunta);
-        }catch(JSONException e){
+        } catch (JSONException e) {
             e.printStackTrace();
         }
         return result;

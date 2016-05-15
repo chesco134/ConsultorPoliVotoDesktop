@@ -26,7 +26,8 @@ public class ProveedorDeRegistroDeVotacion {
     
     public static String LOCAL_ADDR;
     
-    public static void solicitudDeRegistro(Votacion votacion) throws SOAPException, IOException{
+    public static int solicitudDeRegistro(Votacion votacion) throws SOAPException, IOException{
+        int idVotacion = -1;
         try{// Solicitud de registro ante el servidor global.
             JSONObject json = new JSONObject();
             json.put("Title", votacion.getTitulo());
@@ -35,30 +36,21 @@ public class ProveedorDeRegistroDeVotacion {
             json.put("action", 1);
             SoapClient handler = new SoapClient(json);
             handler.setHost(LOCAL_ADDR);
-            System.out.println(json.getInt("action") + " resp: " + handler.main());
-        }catch(JSONException e){
+            String resp = handler.main();
+            System.out.println(json.getInt("action") + " resp: " + resp);
+            idVotacion = Integer.parseInt(resp);
+        }catch(NumberFormatException | JSONException e){
             e.printStackTrace();
         }
-    }
-    
-    public static void solicitudDeIncorporacionAlProceso(Votacion votacion) throws SOAPException, IOException{
-        try{// Solicitud de incorporación al proceso (¿no se debería obviar en el registro?)
-            JSONObject json = new JSONObject();
-            json.put("Name", votacion.getLugar());
-            json.put("action", 2);
-            SoapClient handler = new SoapClient(json);
-            handler.setHost(LOCAL_ADDR);
-            System.out.println("2 resp: " + handler.main());
-        }catch(JSONException e){
-            e.printStackTrace();
-        }
+        return idVotacion;
     }
     
     public static void solicitudDeIncorporacionDeHostConsultor(Votacion votacion, String consultorHost) throws SOAPException, IOException{
         try{ // Da de alta el nombre del lugar y el host consultor.
             JSONObject json = new JSONObject();
+            json.put("id_votacion", votacion.getId());
             json.put("title", votacion.getTitulo());
-            json.put("place", votacion.getLugar());
+            json.put("id_place", votacion.getIdEscuela());
             json.put("host", consultorHost);
             json.put("action", 3);
             SoapClient handler = new SoapClient(json);
@@ -88,6 +80,7 @@ public class ProveedorDeRegistroDeVotacion {
                 row.put("opciones", opsPregunta);
                 content.put(row);
             }
+            json.put("id_votacion", votacion.getId());
             json.put("title", votacion.getTitulo());
             json.put("quiz", content);
             json.put("action", 4);

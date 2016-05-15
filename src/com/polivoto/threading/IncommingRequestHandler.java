@@ -6,6 +6,7 @@
 package com.polivoto.threading;
 
 import com.polivoto.networking.IOHandler;
+import com.polivoto.networking.ServicioDeIPExterna;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -26,7 +27,9 @@ import java.util.TreeMap;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import org.inspira.jcapiz.polivoto.pojo.Votacion;
+import org.inspira.polivoto.proveedores.LogProvider;
 import org.inspira.polivoto.proveedores.ProveedorDeMarshalling;
+import org.inspira.polivoto.proveedores.ProveedorDeRecursos;
 import org.inspira.polivoto.proveedores.ProveedorDeRegistroDeVotacion;
 import org.json.JSONArray;
 
@@ -39,12 +42,14 @@ public class IncommingRequestHandler extends Thread {
     private AccionesConsultor accionesConsultor;
     private ServerSocket server;
     private String remoteHost;
+    private boolean useExternalHost;
     private JFrame mainFrame;
 
-    public void setAccionesConsultor(JFrame mainFrame, AccionesConsultor accionesConsultor, String remoteHost) {
+    public void setAccionesConsultor(JFrame mainFrame, AccionesConsultor accionesConsultor, String remoteHost, boolean useExternalHost) {
         this.mainFrame = mainFrame;
         this.accionesConsultor = accionesConsultor;
         this.remoteHost = remoteHost;
+        this.useExternalHost = useExternalHost;
     }
 
     @Override
@@ -88,11 +93,13 @@ public class IncommingRequestHandler extends Thread {
                 JSONObject json = new JSONObject(smthg);
                 String resp;
                 resp = "¡Listo!";
+                if(useExternalHost)
+                    remoteHost = ServicioDeIPExterna.obtenerIPServidorRemoto();
                 switch (json.getInt("action")) {
                     case 1: // Local server needs to check out the status of one boleta...
                         json.put("action", 8);
                         SoapClient sc = new SoapClient(json);
-                        sc.setHost("192.168.1.78");
+                        sc.setHost(remoteHost);
                         resp = sc.main();
                         break;
                     case 2: // Remote server needs to check out the status of one boleta locally...
@@ -103,36 +110,40 @@ public class IncommingRequestHandler extends Thread {
                         Votacion votacion = ProveedorDeMarshalling.unmarshallMyVotingObject(jvotacion.toString());
                         System.out.println("Inet4Addr " + Inet4Address.getLocalHost().getHostAddress());
                         ProveedorDeRegistroDeVotacion.LOCAL_ADDR = remoteHost;
-                        try {
-                            ProveedorDeRegistroDeVotacion.solicitudDeRegistro(votacion);
-                        } catch (SOAPException | IOException e) {
-                            resp = "Error en 1";
+                        String mHost = useExternalHost ? ServicioDeIPExterna.obtenerIPExterna() : Inet4Address.getLocalHost().getHostAddress();
+                        if (mHost != null) {
+                            try {
+                                votacion.setId(ProveedorDeRegistroDeVotacion.solicitudDeRegistro(votacion));
+                            } catch (SOAPException | IOException e) {
+                                resp = "Error en 1";
+                            }
+                            try {
+                                ProveedorDeRegistroDeVotacion.solicitudDeIncorporacionDeHostConsultor(votacion, mHost);
+                            } catch (SOAPException | IOException e) {
+                                resp = "¡Listo!".equals(resp) ? "Error en 3" : resp.concat(", 3");
+                            }
+                            try {
+                                ProveedorDeRegistroDeVotacion.solicitudDeRegistroDelCuestionario(votacion);
+                            } catch (SOAPException | IOException e) {
+                                resp = "¡Listo!".equals(resp) ? "Error en 4" : resp.concat(", 4");
+                            }
+                            try {
+                                JSONObject json1 = new JSONObject();
+                                json1.put("action", 11);
+                                json1.put("host", useExternalHost ? mHost : mHost.concat(":8080"));
+                                json1.put("idVotacion", votacion.getId());
+                                SoapClient cli = new SoapClient(json1);
+                                cli.setHost(remoteHost);
+                                resp = cli.main();
+                            } catch (JSONException | SOAPException e) {
+                                e.printStackTrace();
+                            }
+                            json.put("objeto_serializado", ProveedorDeMarshalling.marshallMyVotingObject(votacion));
+                        } else {
+                            resp = "Servicio por el momento no disponible";
                         }
-                        try {
-                            ProveedorDeRegistroDeVotacion.solicitudDeIncorporacionAlProceso(votacion);
-                        } catch (SOAPException | IOException e) {
-                            resp = "¡Listo!".equals(resp) ? "Error en 2" : resp.concat(", 2");
-                        }
-                        try {
-                            ProveedorDeRegistroDeVotacion.solicitudDeIncorporacionDeHostConsultor(votacion, Inet4Address.getLocalHost().getHostAddress());
-                        } catch (SOAPException | IOException e) {
-                            resp = "¡Listo!".equals(resp) ? "Error en 3" : resp.concat(", 3");
-                        }
-                        try {
-                            ProveedorDeRegistroDeVotacion.solicitudDeRegistroDelCuestionario(votacion);
-                        } catch (SOAPException | IOException e) {
-                            resp = "¡Listo!".equals(resp) ? "Error en 4" : resp.concat(", 4");
-                        }
-                        break;
-                    case 4: // Solicitud de registro de zona
-                        try {
-                            json.put("action", 2);
-                            SoapClient handler = new SoapClient(json);
-                            handler.setHost(remoteHost);
-                            handler.main();
-                        } catch (SOAPException | IOException e) {
-                            resp = "¡Listo!".equals(resp) ? "Error en 2" : resp.concat(", 2");
-                        }
+                        json.put("resp", resp);
+                        resp = json.toString();
                         break;
                     case 5: // Solicitud de registro sólo de incorporación de Host consultor
                         try {
@@ -150,20 +161,21 @@ public class IncommingRequestHandler extends Thread {
                             SoapClient handler = new SoapClient(json);
                             handler.setHost(remoteHost);
                             resp = handler.main();
+                            System.out.println("El quiz dice: " + resp);
                         } catch (SOAPException | IOException e) {
                             resp = "¡Listo!".equals(resp) ? "Error en 7" : resp.concat(", 7");
                         }
                         break;
-                    case 7: // Solicitud de cuestionario
+                    case 7: // Solicitud de procesos disponibles
                         try {
                             json.put("action", 5);
-                            System.out.println("Es el caso 7! json: " + json.toString());
+                            System.out.println("Es el caso 5! json: " + json.toString());
                             SoapClient handler = new SoapClient(json);
                             handler.setHost(remoteHost);
                             resp = handler.main();
                             System.out.println("We got: " + resp);
                         } catch (SOAPException | IOException e) {
-                            resp = "¡Listo!".equals(resp) ? "Error en 6" : resp.concat(", 6");
+                            resp = "¡Listo!".equals(resp) ? "Error en 5" : resp.concat(", 5");
                         }
                         break;
                     case 8: // Solicitud de finalizacion
@@ -184,7 +196,7 @@ public class IncommingRequestHandler extends Thread {
                         try {
                             accionesConsultor.consultaVotacionesDisponibles();
                             JSONArray array = accionesConsultor.getVotacionesDisponibles();
-                            Map<String,Integer> elementos = new TreeMap<>();
+                            Map<String, Integer> elementos = new TreeMap<>();
                             Map<String, Integer> repetidos = new TreeMap<>();
                             Integer cantidad;
                             String textoAlterno;
@@ -192,13 +204,13 @@ public class IncommingRequestHandler extends Thread {
                             for (int i = 0; i < array.length(); i++) {
                                 json = array.getJSONObject(i);
                                 containsKey = elementos.containsKey(json.getString("titulo"));
-                                if(containsKey){
+                                if (containsKey) {
                                     cantidad = repetidos.get(json.getString("titulo"));
                                     cantidad = cantidad == null ? 1 : cantidad + 1;
                                     repetidos.put(json.getString("titulo"), cantidad);
-                                    textoAlterno = json.getString("titulo") + (String.format("(%d)", cantidad));
+                                    textoAlterno = json.getString("titulo") + "(" + (cantidad < 10 ? "0" + cantidad : cantidad) + ")";
                                     elementos.put(textoAlterno, json.getInt("idVotacion"));
-                                }else{
+                                } else {
                                     elementos.put(json.getString("titulo"), json.getInt("idVotacion"));
                                 }
                             }
@@ -239,8 +251,6 @@ public class IncommingRequestHandler extends Thread {
                         break;
                     case 11: // Carga de secretos
                         try {
-                            System.out.println("contenido_cifrado: " + json.getString("contenido_cifrado"));
-                            System.out.println("secreto_cifrado: " + json.getString("secreto_cifrado"));
                             json.put("action", 9);
                             System.out.println("Es el caso 9! json: " + json.toString());
                             SoapClient handler = new SoapClient(json);
@@ -251,6 +261,64 @@ public class IncommingRequestHandler extends Thread {
                             resp = "¡Listo!".equals(resp) ? "Error en 9" : resp.concat(", 9");
                         }
                         break;
+                    case 12: // Atención a sincronía de tiempos
+                        json.put("t_salida", new java.util.Date().getTime());
+                        resp = json.toString();
+                        break;
+                    case 13: // Petición de tiempo actual
+                        try {
+                            json.put("action", 10);
+                            System.out.println("Es el caso 10! json: " + json.toString());
+                            SoapClient handler = new SoapClient(json);
+                            handler.setHost(remoteHost);
+                            resp = handler.main();
+                            System.out.println("We got: " + resp);
+                        } catch (SOAPException | IOException e) {
+                            resp = "¡Listo!".equals(resp) ? "Error en 10" : resp.concat(", 10");
+                        }
+                        break;
+                    case 14: // Enviar perfiles de votación
+                        try {
+                            json.put("action", 2);
+                            System.out.println("Es el caso 2! json: " + json.toString());
+                            SoapClient handler = new SoapClient(json);
+                            handler.setHost(remoteHost);
+                            resp = handler.main();
+                            resp = resp.equals("success") ? "¡Listo!" : "Servicio por el momento no disponible";
+                            System.out.println("We got: " + resp);
+                        } catch (SOAPException | IOException e) {
+                            resp = "¡Listo!".equals(resp) ? "Error en 2" : resp.concat(", 2");
+                        }
+                        break;
+                    case 15: // Solicitar perfiles de votación
+                        try {
+                            json.put("action", 10);
+                            System.out.println("Es el caso 10! json: " + json.toString());
+                            SoapClient handler = new SoapClient(json);
+                            handler.setHost(remoteHost);
+                            resp = handler.main();
+                            resp = resp.equals("success") ? "¡Listo!" : "Servicio por el momento no disponible";
+                            System.out.println("We got: " + resp);
+                        } catch (SOAPException | IOException e) {
+                            resp = "¡Listo!".equals(resp) ? "Error en 10" : resp.concat(", 10");
+                        }
+                        break;
+                    case 16: // Obtener estampa de tiempo de servidor principal
+                        long estampaDeTiempo = accionesConsultor.consultaEstampaDeTiempoServidor();
+                        json = new JSONObject();
+                        json.put("estampa_de_tiempo", estampaDeTiempo);
+                        resp = json.toString();
+                        break;
+                    case 17: // Server whants to know main timestamp
+                        json.put("action", 12);
+                        try {
+                            SoapClient handler = new SoapClient(json);
+                            handler.setHost(remoteHost);
+                            resp = handler.main();
+                        } catch (IOException | SOAPException e) {
+                            resp = json.toString();
+                        }
+                        break;
                     default:
                 }
                 ioHandler.sendMessage(resp.getBytes());
@@ -259,6 +327,34 @@ public class IncommingRequestHandler extends Thread {
                 Logger.getLogger(IncommingRequestHandler.class.getName()).log(Level.SEVERE, null, e);
             }
         }
+    }
+
+    private void yaVasAEmpezar() {
+        final long startingMillis = new java.util.Date().getTime();
+        EsperanzaDeTiempo esperanzaDeTiempo = new EsperanzaDeTiempo(1, 1, accionesConsultor, (long) 3.6e5, new EsperanzaDeTiempo.TimeToCookAction() {
+
+            @Override
+            public void coocked(Long esperanzaCalculada, String status) {
+                long finishingMillis = new java.util.Date().getTime();
+                if ("Ok".equals(status)) {
+                    LogProvider.logMessage(getClass().getName(), "Terminamos a las: " + ProveedorDeRecursos.obtenerFecha());
+                    LogProvider.logMessage(getClass().getName(), "Tiempo total: " + ProveedorDeRecursos.obtenerFormatoEnHoras(finishingMillis - startingMillis));
+                    LogProvider.logMessage(getClass().getName(), "Esperanza calculada: " + esperanzaCalculada);
+                    //continuar(esperanzaCalculada);
+                } else {
+                    final JFrame f = new JFrame();
+                    new java.util.Timer().schedule(new java.util.TimerTask() {
+                        @Override
+                        public void run() {
+                            f.dispose();
+                        }
+                    }, 2700);
+                    JOptionPane.showMessageDialog(f, status);
+                }
+            }
+        });
+        LogProvider.logMessage(getClass().getName(), "Iniciamos a las: " + ProveedorDeRecursos.obtenerFecha());
+        esperanzaDeTiempo.bake();
     }
 
     private void continuar() {

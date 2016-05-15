@@ -9,7 +9,6 @@ import com.polivoto.logica.Cronometro;
 import com.polivoto.logica.RecibirVotos;
 import com.polivoto.networking.IOHandler;
 import com.polivoto.threading.IncommingRequestHandler;
-import com.polivoto.threading.ServicioDeSincronizacionDeReloj;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -59,6 +58,7 @@ public class AnalistaLocal extends JFrame {
      *
      * @param accionesConsultor
      */
+
     public AnalistaLocal(AccionesConsultor accionesConsultor) {
         this.accionesConsultor = accionesConsultor;
         initComponents();
@@ -69,13 +69,17 @@ public class AnalistaLocal extends JFrame {
         Panel3.setVisible(false);
         try {
             String startupDataString = this.accionesConsultor.consultaParametrosIniciales();
-            this.accionesConsultor.consultaPreguntas();
-            System.out.println("Startup data: " + startupDataString);
             json = new JSONObject(startupDataString);
-            cronometro = new Cronometro(lblhrs, lblmin, lblseg, json.getLong("tiempo_final"));
+//            long tSalida = new java.util.Date().getTime() + esperanzaDeTiempo;
+//            tSalida += esperanzaDeTiempo;
+//            long tFinal = json.getLong("tiempo_final_final") - json.getLong("t_salida");
+            this.accionesConsultor.consultaPreguntas();
+            long tFinal = accionesConsultor.consultaEstampaDeTiempoServidor();
+            cronometro = new Cronometro(lblhrs, lblmin, lblseg, tFinal);
             cronometro.iniciarCronometro();
-            java.util.Timer servicioDeSincronizacionDeReloj = new java.util.Timer();
-            servicioDeSincronizacionDeReloj.schedule(new ServicioDeSincronizacionDeReloj(accionesConsultor.getHost(), cronometro), 0, 10000);
+            System.out.println("Startup data: " + startupDataString);
+//            java.util.Timer servicioDeSincronizacionDeReloj = new java.util.Timer();
+//            servicioDeSincronizacionDeReloj.schedule(new ServicioDeSincronizacionDeReloj(accionesConsultor.getHost(), cronometro), 0, 10000);
             escuchar = new RecibirVotos();
             poblacion = json.getInt("poblacion");
             votos = json.getInt("votos");
@@ -97,9 +101,6 @@ public class AnalistaLocal extends JFrame {
         setPreguntasText();
         timerPaneles = new Timer(6000, new PanelesPreguntas());
         timerPaneles.start();
-//        timerMarquesina = new Timer(250, new marquesina());
-//        timerMarquesina.start();
-        
     }
 
     public void setIncommingRequestHandler(IncommingRequestHandler incommingRequestHandler) {

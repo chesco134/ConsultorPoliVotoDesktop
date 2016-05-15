@@ -43,11 +43,10 @@ public class SoapClient {
         String url = "http://" + host + "/FistVotingServiceBank/services/ServAvailableVoteProcesses.ServAvailableVoteProcessesHttpSoap11Endpoint/";
         SOAPMessage soapResponse = soapConnection.call(createSOAPRequest(), url);
 
-        // print SOAP Response
-        System.out.print("Response SOAP Message:");
-        soapResponse.writeTo(System.out);
         SOAPBody body = soapResponse.getSOAPBody();
         java.util.Iterator updates = body.getChildElements();
+        // El siguiente ciclo funciona sólo porque el cuerpo contiene 
+        // un elemento y éste a suvez únicamente contiene un elemento.
         while (updates.hasNext()) {
             System.out.println();
             // The listing and its ID
@@ -76,7 +75,7 @@ public class SoapClient {
         SOAPEnvelope envelope = soapPart.getEnvelope();
         envelope.addNamespaceDeclaration("example", serverURI);
 
-        /*
+        /* El siguiente es un ejemplo tomado de donde me basé para armar la solicitud.
         Constructed SOAP Request Message:
         <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:example="http://ws.cdyne.com/">
             <SOAP-ENV:Header/>
@@ -94,19 +93,9 @@ public class SoapClient {
         SOAPElement soapBodyElem = soapBody.addChildElement("serviceChooser", "example");
         SOAPElement soapBodyElem1 = soapBodyElem.addChildElement("json", "example");
         soapBodyElem1.addTextNode(json.toString());
-//        SOAPElement soapBodyElem2 = soapBodyElem.addChildElement("LicenseKey", "example");
-//        soapBodyElem2.addTextNode("123");
-
         MimeHeaders headers = soapMessage.getMimeHeaders();
         headers.addHeader("SOAPAction", serverURI  + "serviceChooser");
-
         soapMessage.saveChanges();
-
-        /* Print the request message */
-        System.out.print("Request SOAP Message:");
-        soapMessage.writeTo(System.out);
-        System.out.println();
-
         return soapMessage;
     }
 

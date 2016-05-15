@@ -16,10 +16,13 @@ public class ProveedorDeMarshalling {
         String serializedString = null;
         try{
             JSONObject json = new JSONObject();
+            json.put("idVotacion", votacion.getId());
             json.put("titulo", votacion.getTitulo());
             json.put("lugar", votacion.getLugar());
             json.put("fecha_inicial", votacion.getFechaInicio());
             json.put("fecha_final", votacion.getFechaFin());
+            json.put("es_global", votacion.isGlobal() ? 1 : 0);
+            json.put("id_place", votacion.getIdEscuela());
             JSONObject jpregunta;
             JSONArray jpreguntas = new JSONArray();
             JSONArray jopciones;
@@ -36,6 +39,7 @@ public class ProveedorDeMarshalling {
                 jpregunta.put("opciones", jopciones);
                 jpreguntas.put(jpregunta);
             }
+            json.put("preguntas", jpreguntas);
             serializedString = json.toString();
         }catch(JSONException e){
             e.printStackTrace();
@@ -48,11 +52,14 @@ public class ProveedorDeMarshalling {
         try{
             JSONObject json = new JSONObject(serializedObject);
             votacion = new Votacion();
+            votacion.setId(json.getInt("idVotacion"));
             votacion.setTitulo(json.getString("titulo"));
             votacion.setLugar(json.getString("lugar"));
             votacion.setFechaInicio(json.getLong("fecha_inicial"));
             votacion.setFechaFin(json.getLong("fecha_final"));
+            votacion.setGlobal(json.getInt("es_global") != 0);
             JSONArray jpreguntas = json.getJSONArray("preguntas");
+            votacion.setIdEscuela(json.getInt("id_place"));
             JSONObject jpregunta;
             JSONArray jopciones;
             JSONObject jopcion;

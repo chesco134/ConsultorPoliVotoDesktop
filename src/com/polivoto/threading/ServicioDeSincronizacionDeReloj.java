@@ -36,7 +36,7 @@ public class ServicioDeSincronizacionDeReloj extends TimerTask {
             DataOutputStream salida = new DataOutputStream(socket.getOutputStream());
             IOHandler ioHandler = new IOHandler(entrada, salida);
             long currentTime = ioHandler.readLong();
-            cronometro.setTiempoRestante(currentTime);
+            //cronometro.setTiempoRestante(currentTime);
             if(currentTime <= 0) super.cancel();
             System.out.println("Reajuste de tiempo: " + currentTime);
         }catch(IOException e){

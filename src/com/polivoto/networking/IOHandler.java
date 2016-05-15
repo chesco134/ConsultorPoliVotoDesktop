@@ -40,7 +40,7 @@ public class IOHandler {
             }
             writeInt(1);
         }
-        System.out.println("Done reading " + baos.size() + " bytes.");
+        //System.out.println("Done reading " + baos.size() + " bytes.");
         chunk = baos.toByteArray();
         baos.close();
         return chunk;
@@ -48,7 +48,7 @@ public class IOHandler {
 
     public void sendMessage(byte[] message) throws IOException {
         int times = message.length/rate;
-        System.out.println("Writing " + times + " blocks from " + message.length + " bytes.");
+//        System.out.println("Writing " + times + " blocks from " + message.length + " bytes.");
         for( int i=0; i<times; i++ ){
             writeInt(rate);
             salida.write(message, i * rate, rate);

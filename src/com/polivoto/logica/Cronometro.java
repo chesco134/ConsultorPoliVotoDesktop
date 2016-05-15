@@ -23,6 +23,7 @@ public class Cronometro {
     private boolean cronometroActivo;
 
     public Cronometro(JLabel hrs, JLabel min, JLabel seg, long tiempoRestante) {
+        this.tiempoRestante = tiempoRestante;
         this_min = min;
         this_hrs = hrs;
         this_seg = seg;
@@ -88,9 +89,5 @@ public class Cronometro {
         public void actionPerformed(ActionEvent e) {
             iniciarCuentaRegresiva();
         }
-    }
-
-    public void setTiempoRestante(long tiempoRestante){
-        this.tiempoRestante = tiempoRestante;
     }
 }
