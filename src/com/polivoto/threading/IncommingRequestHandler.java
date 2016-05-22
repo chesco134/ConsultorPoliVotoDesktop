@@ -43,6 +43,7 @@ public class IncommingRequestHandler extends Thread {
     private ServerSocket server;
     private String remoteHost;
     private boolean useExternalHost;
+    private boolean isShowing;
     private JFrame mainFrame;
 
     public void setAccionesConsultor(JFrame mainFrame, AccionesConsultor accionesConsultor, String remoteHost, boolean useExternalHost) {
@@ -50,6 +51,7 @@ public class IncommingRequestHandler extends Thread {
         this.accionesConsultor = accionesConsultor;
         this.remoteHost = remoteHost;
         this.useExternalHost = useExternalHost;
+        isShowing = false;
     }
 
     @Override
@@ -93,8 +95,9 @@ public class IncommingRequestHandler extends Thread {
                 JSONObject json = new JSONObject(smthg);
                 String resp;
                 resp = "¡Listo!";
-                if(useExternalHost)
+                if (useExternalHost) {
                     remoteHost = ServicioDeIPExterna.obtenerIPServidorRemoto();
+                }
                 switch (json.getInt("action")) {
                     case 1: // Local server needs to check out the status of one boleta...
                         json.put("action", 8);
@@ -110,7 +113,7 @@ public class IncommingRequestHandler extends Thread {
                         Votacion votacion = ProveedorDeMarshalling.unmarshallMyVotingObject(jvotacion.toString());
                         System.out.println("Inet4Addr " + Inet4Address.getLocalHost().getHostAddress());
                         ProveedorDeRegistroDeVotacion.LOCAL_ADDR = remoteHost;
-                        String mHost = useExternalHost ? ServicioDeIPExterna.obtenerIPExterna() : Inet4Address.getLocalHost().getHostAddress();
+                        String mHost = useExternalHost ? ServicioDeIPExterna.obtenerIPExterna() : Inet4Address.getLocalHost().getHostAddress()+":8080";
                         if (mHost != null) {
                             try {
                                 votacion.setId(ProveedorDeRegistroDeVotacion.solicitudDeRegistro(votacion));
@@ -130,7 +133,7 @@ public class IncommingRequestHandler extends Thread {
                             try {
                                 JSONObject json1 = new JSONObject();
                                 json1.put("action", 11);
-                                json1.put("host", useExternalHost ? mHost : mHost.concat(":8080"));
+                                json1.put("host", mHost);
                                 json1.put("idVotacion", votacion.getId());
                                 SoapClient cli = new SoapClient(json1);
                                 cli.setHost(remoteHost);
@@ -148,9 +151,10 @@ public class IncommingRequestHandler extends Thread {
                     case 5: // Solicitud de registro sólo de incorporación de Host consultor
                         try {
                             json.put("action", 3);
+                            json.put("host", useExternalHost ? ServicioDeIPExterna.obtenerIPExterna() : Inet4Address.getLocalHost().getHostAddress()+":8080");
                             SoapClient handler = new SoapClient(json);
                             handler.setHost(remoteHost);
-                            handler.main();
+                            resp = handler.main();
                         } catch (SOAPException | IOException e) {
                             resp = "¡Listo!".equals(resp) ? "Error en 3" : resp.concat(", 3");
                         }
@@ -245,9 +249,14 @@ public class IncommingRequestHandler extends Thread {
                         }
                         break;
                     case 10:
-                        ioHandler.sendMessage("¡Listo!".getBytes());
-                        socket.close();
-                        continuar();
+                        if (!isShowing) {
+                            isShowing = true;
+                            ioHandler.sendMessage("¡Listo!".getBytes());
+                            socket.close();
+                            continuar();
+                        } else {
+                            resp = "Ya habíamos empezado";
+                        }
                         break;
                     case 11: // Carga de secretos
                         try {
@@ -265,7 +274,7 @@ public class IncommingRequestHandler extends Thread {
                         json.put("t_salida", new java.util.Date().getTime());
                         resp = json.toString();
                         break;
-                    case 13: // Petición de tiempo actual
+                    case 13: // Petición de perfiles
                         try {
                             json.put("action", 10);
                             System.out.println("Es el caso 10! json: " + json.toString());
@@ -297,7 +306,6 @@ public class IncommingRequestHandler extends Thread {
                             SoapClient handler = new SoapClient(json);
                             handler.setHost(remoteHost);
                             resp = handler.main();
-                            resp = resp.equals("success") ? "¡Listo!" : "Servicio por el momento no disponible";
                             System.out.println("We got: " + resp);
                         } catch (SOAPException | IOException e) {
                             resp = "¡Listo!".equals(resp) ? "Error en 10" : resp.concat(", 10");

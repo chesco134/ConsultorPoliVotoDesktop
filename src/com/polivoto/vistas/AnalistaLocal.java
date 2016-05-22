@@ -70,16 +70,11 @@ public class AnalistaLocal extends JFrame {
         try {
             String startupDataString = this.accionesConsultor.consultaParametrosIniciales();
             json = new JSONObject(startupDataString);
-//            long tSalida = new java.util.Date().getTime() + esperanzaDeTiempo;
-//            tSalida += esperanzaDeTiempo;
-//            long tFinal = json.getLong("tiempo_final_final") - json.getLong("t_salida");
             this.accionesConsultor.consultaPreguntas();
-            long tFinal = accionesConsultor.consultaEstampaDeTiempoServidor();
+            long tFinal = json.getLong("tiempo_final");
             cronometro = new Cronometro(lblhrs, lblmin, lblseg, tFinal);
             cronometro.iniciarCronometro();
             System.out.println("Startup data: " + startupDataString);
-//            java.util.Timer servicioDeSincronizacionDeReloj = new java.util.Timer();
-//            servicioDeSincronizacionDeReloj.schedule(new ServicioDeSincronizacionDeReloj(accionesConsultor.getHost(), cronometro), 0, 10000);
             escuchar = new RecibirVotos();
             poblacion = json.getInt("poblacion");
             votos = json.getInt("votos");
