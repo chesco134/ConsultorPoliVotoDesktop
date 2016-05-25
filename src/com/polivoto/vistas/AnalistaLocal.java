@@ -8,7 +8,6 @@ package com.polivoto.vistas;
 import com.polivoto.logica.Cronometro;
 import com.polivoto.logica.RecibirVotos;
 import com.polivoto.networking.IOHandler;
-import com.polivoto.threading.IncommingRequestHandler;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -20,8 +19,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFrame;
@@ -41,24 +38,19 @@ public class AnalistaLocal extends JFrame {
 
     private final CardLayout cardLayout = new CardLayout();
     private final AccionesConsultor accionesConsultor;
-    private IncommingRequestHandler incommingRequestHandler;
-    private String nombreStartUp;
-    boolean progreso = true;
     private Cronometro cronometro;
     private RecibirVotos escuchar;
     private int votos = 0;
     private JSONObject json;
     private Integer poblacion;
-    private String tituloVotacion;
     private CardLayout cardsPreguntas;
-    private List<Consultor> listaConsultores = new ArrayList<>();
+    private Consultor consultor;
 
     /**
      * Creates new form AnalistaD
      *
      * @param accionesConsultor
      */
-
     public AnalistaLocal(AccionesConsultor accionesConsultor) {
         this.accionesConsultor = accionesConsultor;
         initComponents();
@@ -78,7 +70,6 @@ public class AnalistaLocal extends JFrame {
             escuchar = new RecibirVotos();
             poblacion = json.getInt("poblacion");
             votos = json.getInt("votos");
-            nombreStartUp = json.getString("lugar");
             System.out.println("" + json.toString());
         } catch (IOException | JSONException ignore) {
             ignore.printStackTrace();
@@ -90,16 +81,12 @@ public class AnalistaLocal extends JFrame {
         panelMain.add(Panel3, "3");
         cardLayout.show(panelMain, "1");
         System.out.println("Startup dada: " + json.toString());
-        escuchar.iniciarEscucha(votos, poblacion, lblvotos_totales, lblporcentaje, pnlgrafica, Panel3, Panel1);
+        escuchar.iniciarEscucha(votos, poblacion, lblvotos_totales, lblporcentaje, pnlgrafica);
         Service service = new Service();
         service.start();
         setPreguntasText();
         timerPaneles = new Timer(6000, new PanelesPreguntas());
         timerPaneles.start();
-    }
-
-    public void setIncommingRequestHandler(IncommingRequestHandler incommingRequestHandler) {
-        this.incommingRequestHandler = incommingRequestHandler;
     }
 
     private void setPreguntasText() {
@@ -120,7 +107,7 @@ public class AnalistaLocal extends JFrame {
                     lab2.setForeground(new Color(0, 0, 0));
                     panel.add(lab2);
                 }
-                
+
             } catch (JSONException ex) {
                 Logger.getLogger(AnalistaLocal.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -156,18 +143,14 @@ public class AnalistaLocal extends JFrame {
                             escuchar.actualizarConteo(json.getInt("participantes")); // Necesita ajuste para incorporar valor leido.
                             break;
                         case 2:
-                            System.out.println("Proceso Finalizado\n"+json.toString());
+                            System.out.println("Proceso Finalizado\n" + json.toString());
                             accionesConsultor.armarConteoOpciones(json);
                             //incommingRequestHandler.terminarConexion();
                             cardLayout.show(panelMain, "3");
                             escuchar.setRecibiendo(false);
-                            for (int i = 0; i < accionesConsultor.getPreguntas().length(); i++) {
-                                Consultor consultor = new Consultor(i, accionesConsultor);
-                                listaConsultores.add(consultor);
-                            }
+                            consultor = new Consultor(accionesConsultor.getVotacion());
                             break;
                     }
-                    socket.close();
                 }
             } catch (JSONException | IOException e) {
                 e.printStackTrace();
@@ -670,9 +653,7 @@ public class AnalistaLocal extends JFrame {
 
     private void jLabel1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jLabel1MouseClicked
         //Abrir siguiente ventana
-        for (int i = 0; i < listaConsultores.size(); i++) {
-            listaConsultores.get(i).iniciar();
-        }
+        consultor.iniciar();
         setVisible(false);
     }//GEN-LAST:event_jLabel1MouseClicked
 
@@ -777,10 +758,9 @@ public class AnalistaLocal extends JFrame {
     private javax.swing.JPanel panelVotosTotales;
     private javax.swing.JPanel pnlgrafica;
     // End of variables declaration//GEN-END:variables
-    private Timer timerMarquesina;
     private Timer timerPaneles;
 
-    class marquesina implements ActionListener {
+    class Marquesina implements ActionListener {
 
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -789,14 +769,14 @@ public class AnalistaLocal extends JFrame {
         }
 
     }
-    
-    class PanelesPreguntas implements ActionListener{
+
+    class PanelesPreguntas implements ActionListener {
 
         @Override
         public void actionPerformed(ActionEvent e) {
             cardsPreguntas.next(panelPreguntas);
         }
-        
+
     }
 
 }

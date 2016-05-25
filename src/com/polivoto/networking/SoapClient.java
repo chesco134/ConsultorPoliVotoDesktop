@@ -33,7 +33,7 @@ public class SoapClient {
         this.json = json;
     }
     
-    public String main() throws SOAPException, IOException {
+    public String start() throws SOAPException, IOException {
     	String resp = "NaN";
         // Create SOAP Connection
         SOAPConnectionFactory soapConnectionFactory = SOAPConnectionFactory.newInstance();

@@ -18,6 +18,13 @@ public class ResultadoPorPerfil implements Serializable {
     private String perfil;
     private List<Opcion> opciones;
 
+    public ResultadoPorPerfil(String perfil) {
+        this.perfil = perfil;
+    }
+
+    public ResultadoPorPerfil() {
+    }
+
     public String getPerfil() {
         return perfil;
     }

@@ -36,7 +36,7 @@ public class ProveedorDeRegistroDeVotacion {
             json.put("action", 1);
             SoapClient handler = new SoapClient(json);
             handler.setHost(LOCAL_ADDR);
-            String resp = handler.main();
+            String resp = handler.start();
             System.out.println(json.getInt("action") + " resp: " + resp);
             idVotacion = Integer.parseInt(resp);
         }catch(NumberFormatException | JSONException e){
@@ -55,7 +55,7 @@ public class ProveedorDeRegistroDeVotacion {
             json.put("action", 3);
             SoapClient handler = new SoapClient(json);
             handler.setHost(LOCAL_ADDR);
-            System.out.println(json.getInt("action") + " resp: " + handler.main());
+            System.out.println(json.getInt("action") + " resp: " + handler.start());
         }catch(JSONException e){
             e.printStackTrace();
         }
@@ -86,7 +86,7 @@ public class ProveedorDeRegistroDeVotacion {
             json.put("action", 4);
             SoapClient handler = new SoapClient(json);
             handler.setHost(LOCAL_ADDR);
-            System.out.println(json.getInt("action") + " resp: " + handler.main());
+            System.out.println(json.getInt("action") + " resp: " + handler.start());
         }catch(JSONException e){
             e.printStackTrace();
         }

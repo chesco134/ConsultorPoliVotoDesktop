@@ -46,7 +46,6 @@ public class AccionesConsultor {
     private JSONArray conteoOpcionesPregunta;
     private JSONObject startupData;
     private int totalDePreguntas;
-    private String usrName;
     private JSONArray votacionesDisponibles;
     private String detallesDeVotacion;
     private List<ResultadoPorPerfil> resultadosPorPerfil;
@@ -392,7 +391,7 @@ public class AccionesConsultor {
             /**
              * ** Prueba consulta preguntas ***
              */
-            System.out.println("We are not gonna take it!!");
+            votacion.setLugar(jsonConPreguntas.getString("lugar"));
             conteoOpcionesPregunta = new JSONArray();
             resultadosPorPerfil = new ArrayList<>();
             for (int i = 0; i < jsonConPreguntas.getInt("total_preguntas"); i++) {
@@ -414,7 +413,7 @@ public class AccionesConsultor {
                 participantesQueRespondieronPregunta += jarr.getJSONObject(i).getInt("cantidad");
                 op = new Opcion(jarr.getJSONObject(i).getString("reactivo"));
                 op.setCantidad(jarr.getJSONObject(i).getInt("cantidad"));
-                votacion.getPreguntas().get(votacion.buscaPregunta(pregunta)).agregarOpcion(op);
+                votacion.agregarOpcion(pregunta, op);
             }
             JSONArray jPerfiles = json.getJSONArray("resultados_por_perfil");
             JSONObject jPerfil;
@@ -432,6 +431,7 @@ public class AccionesConsultor {
                 }
                 rpp.setOpciones(opcionesPorPerfil);
                 resultadosPorPerfil.add(rpp);
+                votacion.agregarResultadoPorPerfil(pregunta, rpp);
             }
             result = new JSONObject();
             result.put("participantes", participantesQueRespondieronPregunta); // Es el número total de participantes por pregunta.
@@ -554,6 +554,10 @@ public class AccionesConsultor {
 
     public String getDetallesDeVotacion() {
         return detallesDeVotacion;
+    }
+    
+    public Votacion getVotacion(){
+        return votacion;
     }
 
 }

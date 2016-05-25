@@ -5,7 +5,6 @@
  */
 package com.polivoto.vistas;
 
-import com.polivoto.networking.ServicioDeIPExterna;
 import com.polivoto.threading.AdminConexionAutomatica;
 import java.io.IOException;
 import java.security.InvalidKeyException;

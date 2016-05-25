@@ -5,14 +5,11 @@
  */
 package com.polivoto.vistas;
 
-import com.polivoto.vistas.acciones.Datos;
-import java.awt.CardLayout;
+import com.polivoto.shared.Votacion;
 import java.awt.Color;
 import java.awt.Font;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
-import org.inspira.polivoto.AccionesConsultor;
 
 /**
  *
@@ -24,55 +21,25 @@ public class Consultor extends javax.swing.JFrame {
     private static final Font FONT_BOLD = new Font("Roboto", 1, 24);
     private static final Color COLOR_BLACK = new Color(0, 0, 0);
     private static final Color COLOR_WINE = new Color(134, 36, 31);
-    private static CardLayout card = new CardLayout();
-    private JPanel panelBarras;
-    private JPanel panelPastel;
-    private JPanel panelTabla;
-    private AccionesConsultor accionesConsultor;
-    private Datos data;
-    private int pox;
+    private final int PIECHART = 0;
+    private final int BARCHART = 1;
+    private final int TABLE = 2;
+    private Charts chart;
+    private boolean bHeader = false;
+    private boolean bBotones = false;
+    private int bGrafica = 0;
+    private Votacion votacion;
     /**
      * Creates new form Consultor
+     * @param votacion
      */
-    public Consultor(){
+    public Consultor(Votacion votacion){
         initComponents();
-        Resultados.setLayout(card);
-        panelBarras = new BarrasForm();
-        panelPastel = new PastelForm();
-        panelTabla = new TablaForm();
-        Resultados.add(panelBarras, "barras");
-        Resultados.add(panelPastel, "pastel");
-        Resultados.add(panelTabla, "tabla");
-        setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
-    }
-    
-    public Consultor(int pox, AccionesConsultor accionesConsultor){
-        this.accionesConsultor = accionesConsultor;
-        this.data = new Datos(accionesConsultor, pox);
-        this.pox = pox;
-        initComponents();
-        Resultados.setLayout(card);
-        panelBarras = new BarrasForm();
-        panelPastel = new PastelForm();
-        panelTabla = new TablaForm();
-        Resultados.add(panelBarras, "barras");
-        Resultados.add(panelPastel, "pastel");
-        Resultados.add(panelTabla, "tabla");
-        setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
-    }
-    
-    public Consultor(int pox, AccionesConsultor accionesConsultor, String label){
-        this.accionesConsultor = accionesConsultor;
-        this.data = new Datos(accionesConsultor, pox, label);
-        this.pox = pox;
-        initComponents();
-        Resultados.setLayout(card);
-        panelBarras = new BarrasForm();
-        panelPastel = new PastelForm();
-        panelTabla = new TablaForm();
-        Resultados.add(panelBarras, "barras");
-        Resultados.add(panelPastel, "pastel");
-        Resultados.add(panelTabla, "tabla");
+        this.votacion = votacion;
+        chart = new Charts(votacion, panelGrafica);
+        chart.getHeader(panelInfo);
+        chart.getBotonesPreguntas(panelBotones);
+        chart.setState(PIECHART);
         setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
     }
 
@@ -88,6 +55,9 @@ public class Consultor extends javax.swing.JFrame {
         panelHeader = new javax.swing.JPanel();
         botonMenu = new javax.swing.JLabel();
         Resultados = new javax.swing.JPanel();
+        panelInfo = new javax.swing.JPanel();
+        panelBotones = new javax.swing.JPanel();
+        panelGrafica = new javax.swing.JPanel();
         panelLateral = new javax.swing.JPanel();
         iconoBarras = new javax.swing.JLabel();
         iconoTabla = new javax.swing.JLabel();
@@ -126,15 +96,63 @@ public class Consultor extends javax.swing.JFrame {
 
         Resultados.setBackground(new java.awt.Color(250, 250, 250));
 
+        panelInfo.setBackground(new java.awt.Color(255, 255, 255));
+
+        javax.swing.GroupLayout panelInfoLayout = new javax.swing.GroupLayout(panelInfo);
+        panelInfo.setLayout(panelInfoLayout);
+        panelInfoLayout.setHorizontalGroup(
+            panelInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+        panelInfoLayout.setVerticalGroup(
+            panelInfoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+
+        panelBotones.setBackground(new java.awt.Color(255, 255, 255));
+
+        javax.swing.GroupLayout panelBotonesLayout = new javax.swing.GroupLayout(panelBotones);
+        panelBotones.setLayout(panelBotonesLayout);
+        panelBotonesLayout.setHorizontalGroup(
+            panelBotonesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 250, Short.MAX_VALUE)
+        );
+        panelBotonesLayout.setVerticalGroup(
+            panelBotonesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
+        panelGrafica.setBackground(new java.awt.Color(255, 255, 255));
+
+        javax.swing.GroupLayout panelGraficaLayout = new javax.swing.GroupLayout(panelGrafica);
+        panelGrafica.setLayout(panelGraficaLayout);
+        panelGraficaLayout.setHorizontalGroup(
+            panelGraficaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 447, Short.MAX_VALUE)
+        );
+        panelGraficaLayout.setVerticalGroup(
+            panelGraficaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
         javax.swing.GroupLayout ResultadosLayout = new javax.swing.GroupLayout(Resultados);
         Resultados.setLayout(ResultadosLayout);
         ResultadosLayout.setHorizontalGroup(
             ResultadosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 713, Short.MAX_VALUE)
+            .addComponent(panelInfo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(ResultadosLayout.createSequentialGroup()
+                .addComponent(panelBotones, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(panelGrafica, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         ResultadosLayout.setVerticalGroup(
             ResultadosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 620, Short.MAX_VALUE)
+            .addGroup(ResultadosLayout.createSequentialGroup()
+                .addComponent(panelInfo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(ResultadosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(panelBotones, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(panelGrafica, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
 
         panelLateral.setVisible(banderaPanelLateral);
@@ -160,7 +178,6 @@ public class Consultor extends javax.swing.JFrame {
         iconoTabla.setFont(new java.awt.Font("Roboto", 0, 24)); // NOI18N
         iconoTabla.setIcon(new javax.swing.ImageIcon(getClass().getResource("/com/polivoto/imagenes/chart.png"))); // NOI18N
         iconoTabla.setText("VER TABLA");
-        iconoTabla.setEnabled(false);
         iconoTabla.setIconTextGap(12);
         iconoTabla.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -219,7 +236,7 @@ public class Consultor extends javax.swing.JFrame {
                 .addComponent(iconoPastel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(iconoTabla)
-                .addContainerGap(265, Short.MAX_VALUE))
+                .addContainerGap(179, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -246,8 +263,8 @@ public class Consultor extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void botonMenuMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_botonMenuMouseClicked
-        panelLateral.setVisible(!banderaPanelLateral);
         banderaPanelLateral = !banderaPanelLateral;
+        panelLateral.setVisible(banderaPanelLateral);
     }//GEN-LAST:event_botonMenuMouseClicked
 
     private void iconoBarrasMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_iconoBarrasMouseEntered
@@ -276,19 +293,21 @@ public class Consultor extends javax.swing.JFrame {
 
     private void iconoBarrasMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_iconoBarrasMouseClicked
         panelLateral.setVisible(false);
-        data.setBarChartIn(panelBarras);
-        card.show(Resultados, "barras");
+        banderaPanelLateral = !banderaPanelLateral;
+        chart.setState(BARCHART);
     }//GEN-LAST:event_iconoBarrasMouseClicked
 
     private void iconoPastelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_iconoPastelMouseClicked
         panelLateral.setVisible(false);
-        data.setPieChartIn(panelPastel);
-        card.show(Resultados, "pastel");
+        banderaPanelLateral = !banderaPanelLateral;
+        chart.setState(PIECHART);
+        
     }//GEN-LAST:event_iconoPastelMouseClicked
 
     private void iconoTablaMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_iconoTablaMouseClicked
         panelLateral.setVisible(false);
-        card.show(Resultados, "tabla");
+        banderaPanelLateral = !banderaPanelLateral;
+        chart.setState(TABLE);
     }//GEN-LAST:event_iconoTablaMouseClicked
 
     public void iniciar() {
@@ -328,7 +347,10 @@ public class Consultor extends javax.swing.JFrame {
     private javax.swing.JLabel iconoPastel;
     private javax.swing.JLabel iconoPoliVoto;
     private javax.swing.JLabel iconoTabla;
+    private javax.swing.JPanel panelBotones;
+    private javax.swing.JPanel panelGrafica;
     private javax.swing.JPanel panelHeader;
+    private javax.swing.JPanel panelInfo;
     private javax.swing.JPanel panelLateral;
     // End of variables declaration//GEN-END:variables
     private boolean banderaPanelLateral = false;

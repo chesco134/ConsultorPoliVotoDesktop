@@ -5,15 +5,12 @@
  */
 package com.polivoto.main;
 
-import com.polivoto.threading.AdminConexionAutomatica;
-import com.polivoto.vistas.Acceso;
-
 /**
  *
  * @author azaraf
  */
 public class Main {
     public static void main (String[] args){
-        new Acceso(args).iniciar();
+        new BackBone(args).iniciarSesion();
     }
 }

@@ -36,8 +36,6 @@ public class RecibirVotos {
     private JLabel lblvotos_totales;
     private JLabel lblporcentaje;
     private JPanel pnlgrafica;
-    JPanel pnl_consulta;
-    JPanel pnl_espera;
 
     public boolean isRecibiendo() {
         return recibiendo;
@@ -47,15 +45,13 @@ public class RecibirVotos {
         this.recibiendo = recibiendo;
     }
     
-    public void iniciarEscucha( int votos, double poblacion, JLabel lblvotos_totales, JLabel lblporcentaje, JPanel pnlgrafica, JPanel consulta, JPanel espera ) {
+    public void iniciarEscucha( int votos, double poblacion, JLabel lblvotos_totales, JLabel lblporcentaje, JPanel pnlgrafica) {
         recibiendo = true;
         this.votos = votos;
         this.lblvotos_totales = lblvotos_totales;
         this.lblporcentaje = lblporcentaje;
         this.pnlgrafica = pnlgrafica;  
         this.poblacion = poblacion;
-        this.pnl_consulta = consulta;
-        this.pnl_espera = espera;
         actualizarConteo(votos);
     }
     

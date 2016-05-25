@@ -15,8 +15,8 @@ public class BackBone {
 
     private Acceso acceso;
     
-    public BackBone() {
-        acceso = new Acceso();
+    public BackBone(String args[]) {
+        acceso = new Acceso(args);
     }
     
     public void iniciarSesion(){
