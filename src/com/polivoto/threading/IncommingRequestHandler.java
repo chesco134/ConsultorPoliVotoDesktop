@@ -402,6 +402,7 @@ public class IncommingRequestHandler extends Thread {
 
     private void continuar() {
         accionesConsultor.setLocalHost(localHost);
+        accionesConsultor.setRemoteHost(remoteHost);
         AnalistaLocal analistaLocal = new AnalistaLocal(accionesConsultor);
         analistaLocal.init();
     }

@@ -159,6 +159,7 @@ public class AnalistaLocal extends JFrame {
                                     @Override
                                     public void run() {
                                         SoapClient cli = new SoapClient(json);
+                                        cli.setHost(accionesConsultor.getRemoteHost());
                                         try {
                                             cli.start();
                                         } catch (SOAPException ex) {

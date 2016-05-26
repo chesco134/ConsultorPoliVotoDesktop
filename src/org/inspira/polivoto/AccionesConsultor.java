@@ -51,6 +51,7 @@ public class AccionesConsultor {
     private List<ResultadoPorPerfil> resultadosPorPerfil;
     private Votacion votacion;
     private String localHost;
+    private String remoteHost;
 
     public int getLID() {
         return LID;
@@ -567,6 +568,14 @@ public class AccionesConsultor {
 
     public void setLocalHost(String localHost) {
         this.localHost = localHost;
+    }
+
+    public String getRemoteHost() {
+        return remoteHost;
+    }
+
+    public void setRemoteHost(String remoteHost) {
+        this.remoteHost = remoteHost;
     }
 
 }
