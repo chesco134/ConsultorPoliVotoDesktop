@@ -49,6 +49,7 @@ public class IncommingRequestHandler extends Thread {
     private String remoteHost;
     private boolean useExternalHost;
     private boolean isShowing;
+    private String localHost;
     private JFrame mainFrame;
 
     public void setAccionesConsultor(JFrame mainFrame, AccionesConsultor accionesConsultor, String remoteHost, boolean useExternalHost) {
@@ -122,6 +123,7 @@ public class IncommingRequestHandler extends Thread {
                         System.out.println("Inet4Addr " + Inet4Address.getLocalHost().getHostAddress());
                         ProveedorDeRegistroDeVotacion.LOCAL_ADDR = remoteHost;
                         String mHost = useExternalHost ? ServicioDeIPExterna.obtenerIPExterna() : Inet4Address.getLocalHost().getHostAddress() + ":8080";
+                        localHost = mHost;
                         if (mHost != null) {
                             try {
                                 votacion.setId(ProveedorDeRegistroDeVotacion.solicitudDeRegistro(votacion));
@@ -267,15 +269,6 @@ public class IncommingRequestHandler extends Thread {
                                     mVotacion.agregarResultadoPorPerfil(jpreguntas.getJSONObject(j).getString("pregunta"), rpp);
                                 }
                             }
-                            for (Pregunta p : mVotacion.getPreguntas()) {
-                                System.out.println(p.getTitulo());
-                                for (ResultadoPorPerfil r : p.getResultadosPorPerfil()) {
-                                    System.out.println("\t" + r.getPerfil());
-                                    for (Opcion o : r.getOpciones()) {
-                                        System.out.println("\t\t" + o.getNombre() + ": " + o.getCantidad());
-                                    }
-                                }
-                            }
                             accionesConsultor.setConteoOpcionesPregunta(extra);
                             Consultor consultor = new Consultor(mVotacion);
                             consultor.iniciar();
@@ -408,6 +401,7 @@ public class IncommingRequestHandler extends Thread {
     }
 
     private void continuar() {
+        accionesConsultor.setLocalHost(localHost);
         AnalistaLocal analistaLocal = new AnalistaLocal(accionesConsultor);
         analistaLocal.init();
     }

@@ -8,6 +8,10 @@ package com.polivoto.vistas;
 import com.polivoto.logica.Cronometro;
 import com.polivoto.logica.RecibirVotos;
 import com.polivoto.networking.IOHandler;
+import com.polivoto.networking.SoapClient;
+import com.polivoto.shared.Pregunta;
+import com.polivoto.shared.ResultadoPorPerfil;
+import com.polivoto.shared.Votacion;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
@@ -25,7 +29,9 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.Timer;
+import javax.xml.soap.SOAPException;
 import org.inspira.polivoto.AccionesConsultor;
+import org.inspira.polivoto.proveedores.MarshallMySharedVotingObject;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -145,10 +151,44 @@ public class AnalistaLocal extends JFrame {
                         case 2:
                             System.out.println("Proceso Finalizado\n" + json.toString());
                             accionesConsultor.armarConteoOpciones(json);
+                            Votacion votacion = accionesConsultor.getVotacion();
+                            if (json.getBoolean("es_global")) {
+                                json.put("host", accionesConsultor.getLocalHost());
+                                json.put("action", 13);
+                                new Thread() {
+                                    @Override
+                                    public void run() {
+                                        SoapClient cli = new SoapClient(json);
+                                        try {
+                                            cli.start();
+                                        } catch (SOAPException ex) {
+                                            Logger.getLogger(AnalistaLocal.class.getName()).log(Level.SEVERE, null, ex);
+                                        } catch (IOException ex) {
+                                            Logger.getLogger(AnalistaLocal.class.getName()).log(Level.SEVERE, null, ex);
+                                        }
+                                    }
+                                }.start();
+                                socket = server.accept();
+                                ioHandler = new IOHandler(
+                                        new DataInputStream(socket.getInputStream()),
+                                        new DataOutputStream(socket.getOutputStream())
+                                );
+                                Votacion v = MarshallMySharedVotingObject.unmarshall(new String(ioHandler.handleIncommingMessage()));
+                                ResultadoPorPerfil rpp;
+                                for (Pregunta pregunta : v.getPreguntas()) {
+                                    rpp = new ResultadoPorPerfil("Total global");
+                                    rpp.setOpciones(pregunta.getOpciones());
+                                    votacion.agregarResultadoPorPerfil(pregunta.getTitulo(), rpp);
+                                    for (ResultadoPorPerfil resultadoPorPerfil : pregunta.getResultadosPorPerfil()) {
+                                        resultadoPorPerfil.setPerfil("(Global)".concat(resultadoPorPerfil.getPerfil()));
+                                        votacion.agregarResultadoPorPerfil(pregunta.getTitulo(), resultadoPorPerfil);
+                                    }
+                                }
+                            }
                             //incommingRequestHandler.terminarConexion();
                             cardLayout.show(panelMain, "3");
                             escuchar.setRecibiendo(false);
-                            consultor = new Consultor(accionesConsultor.getVotacion());
+                            consultor = new Consultor(votacion);
                             break;
                     }
                 }
