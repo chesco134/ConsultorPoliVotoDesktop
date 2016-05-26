@@ -162,19 +162,24 @@ public class AnalistaLocal extends JFrame {
                                         cli.setHost(accionesConsultor.getRemoteHost());
                                         try {
                                             cli.start();
-                                        } catch (SOAPException ex) {
-                                            Logger.getLogger(AnalistaLocal.class.getName()).log(Level.SEVERE, null, ex);
-                                        } catch (IOException ex) {
+                                        } catch (SOAPException | IOException ex) {
                                             Logger.getLogger(AnalistaLocal.class.getName()).log(Level.SEVERE, null, ex);
                                         }
                                     }
                                 }.start();
+                                System.out.println("Esperando a que se conecte");
                                 socket = server.accept();
+                                System.out.println("Se conectó!");
                                 ioHandler = new IOHandler(
                                         new DataInputStream(socket.getInputStream()),
                                         new DataOutputStream(socket.getOutputStream())
                                 );
-                                Votacion v = MarshallMySharedVotingObject.unmarshall(new String(ioHandler.handleIncommingMessage()));
+                                String whatCameFromBeyond = new String(ioHandler.handleIncommingMessage());
+                                ioHandler.sendMessage("Gracias".getBytes());
+                                ioHandler.close();
+                                socket.close();
+                                System.out.println("what came from beyond: " + whatCameFromBeyond);
+                                Votacion v = MarshallMySharedVotingObject.unmarshall(whatCameFromBeyond);
                                 ResultadoPorPerfil rpp;
                                 for (Pregunta pregunta : v.getPreguntas()) {
                                     rpp = new ResultadoPorPerfil("Total global");
@@ -188,7 +193,7 @@ public class AnalistaLocal extends JFrame {
                             }
                             //incommingRequestHandler.terminarConexion();
                             cardLayout.show(panelMain, "3");
-                            escuchar.setRecibiendo(false);
+                            //escuchar.setRecibiendo(false);
                             consultor = new Consultor(votacion);
                             break;
                     }

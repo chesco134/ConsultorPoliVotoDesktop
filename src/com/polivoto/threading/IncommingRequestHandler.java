@@ -25,6 +25,7 @@ import com.polivoto.shared.ResultadoPorPerfil;
 import com.polivoto.vistas.AnalistaLocal;
 import com.polivoto.vistas.Consultor;
 import java.net.Inet4Address;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,11 @@ public class IncommingRequestHandler extends Thread {
         this.remoteHost = remoteHost;
         this.useExternalHost = useExternalHost;
         isShowing = false;
+        try {
+            localHost = useExternalHost ? ServicioDeIPExterna.obtenerIPExterna() : Inet4Address.getLocalHost().getHostAddress() + ":8080";
+        } catch (UnknownHostException ex) {
+            Logger.getLogger(IncommingRequestHandler.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
     @Override
@@ -122,16 +128,14 @@ public class IncommingRequestHandler extends Thread {
                         Votacion votacion = ProveedorDeMarshalling.unmarshallMyVotingObject(jvotacion.toString());
                         System.out.println("Inet4Addr " + Inet4Address.getLocalHost().getHostAddress());
                         ProveedorDeRegistroDeVotacion.LOCAL_ADDR = remoteHost;
-                        String mHost = useExternalHost ? ServicioDeIPExterna.obtenerIPExterna() : Inet4Address.getLocalHost().getHostAddress() + ":8080";
-                        localHost = mHost;
-                        if (mHost != null) {
+                        if (localHost != null) {
                             try {
                                 votacion.setId(ProveedorDeRegistroDeVotacion.solicitudDeRegistro(votacion));
                             } catch (SOAPException | IOException e) {
                                 resp = "Error en 1";
                             }
                             try {
-                                ProveedorDeRegistroDeVotacion.solicitudDeIncorporacionDeHostConsultor(votacion, mHost);
+                                ProveedorDeRegistroDeVotacion.solicitudDeIncorporacionDeHostConsultor(votacion, localHost);
                             } catch (SOAPException | IOException e) {
                                 resp = "¡Listo!".equals(resp) ? "Error en 3" : resp.concat(", 3");
                             }
@@ -143,7 +147,7 @@ public class IncommingRequestHandler extends Thread {
                             try {
                                 JSONObject json1 = new JSONObject();
                                 json1.put("action", 11);
-                                json1.put("host", mHost);
+                                json1.put("host", localHost);
                                 json1.put("idVotacion", votacion.getId());
                                 SoapClient cli = new SoapClient(json1);
                                 cli.setHost(remoteHost);
