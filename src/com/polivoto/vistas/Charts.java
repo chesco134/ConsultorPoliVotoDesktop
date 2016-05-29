@@ -24,14 +24,18 @@ import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.border.MatteBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.ValueAxis;
+import org.jfree.chart.block.BlockBorder;
 import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
 import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
 import org.jfree.chart.plot.CategoryPlot;
@@ -58,20 +62,28 @@ public class Charts {
     private Votacion votacion;
     private JPanel panelGrafica;
     private int state;
+    private JButton botonActual;
+    private int tabIndex;
 
     public Charts() {
         state = PIECHART;
+        botonActual = new JButton();
+        tabIndex = 0;
     }
 
     public Charts(Votacion votacion) {
         state = PIECHART;
         this.votacion = votacion;
+        botonActual = new JButton();
+        tabIndex = 0;
     }
 
     public Charts(Votacion votacion, JPanel panelGrafica) {
         this.votacion = votacion;
         this.panelGrafica = panelGrafica;
-        state = PIECHART;
+        state = BARCHART;
+        botonActual = new JButton();
+        tabIndex = 0;
     }
 
     public void getHeader(JPanel header) {
@@ -86,9 +98,13 @@ public class Charts {
         JLabel fechaInicio = new JLabel("<html><b>Fecha de inicio: </b>" + sdf.format(new Date(votacion.getFechaInicio())) + "</html>");
         JLabel fechaFin = new JLabel("<html><b>Fecha de fin: </b>" + sdf.format(new Date(votacion.getFechaFin())) + "</html>");
         titulo.setFont(fuenteNormal);
+        titulo.setVerticalAlignment(JLabel.CENTER);
         lugar.setFont(fuenteNormal);
+        lugar.setVerticalAlignment(JLabel.CENTER);
         fechaFin.setFont(fuenteNormal);
+        fechaFin.setVerticalAlignment(JLabel.CENTER);
         fechaInicio.setFont(fuenteNormal);
+        fechaInicio.setVerticalAlignment(JLabel.CENTER);
         header.add(titulo);
         header.add(fechaInicio);
         header.add(lugar);
@@ -99,6 +115,7 @@ public class Charts {
     }
 
     public void getBotonesPreguntas(JPanel botones) {
+        boolean first = false;
         botones.removeAll();
         System.out.println(":))");
         JPanel panelRelleno = new JPanel(new BorderLayout(20, 20));
@@ -124,9 +141,14 @@ public class Charts {
                 @Override
                 public void actionPerformed(ActionEvent e) {
                     crearGrafica(pregunta);
+                    botonActual = (JButton)e.getSource();
                 }
             });
             panelContainer.add(boton);
+            if(!first){
+                botonActual = boton;
+                first = true;
+            }
         }
 
         botones.repaint();
@@ -135,21 +157,26 @@ public class Charts {
     }
 
     private void crearGrafica(Pregunta pregunta) {
+        panelGrafica.removeAll();
+        panelGrafica.setLayout(new BorderLayout());
+        panelGrafica.repaint();
         switch (state) {
             case PIECHART:
                 System.out.println("piechart de la pregunta " + pregunta.getTitulo());
                 crearPieChart(pregunta);
+                //botonActual.doClick();
                 break;
 
             case BARCHART:
                 System.out.println("barchart de la pregunta " + pregunta.getTitulo());
                 crearBarChart(pregunta);
+                //botonActual.doClick();
                 break;
 
             case TABLE:
                 System.out.println("tabla de la pregunta " + pregunta.getTitulo());
                 crearTabla(pregunta);
-
+                //botonActual.doClick();
                 break;
 
             default:
@@ -159,14 +186,12 @@ public class Charts {
     }
 
     private void crearTabla(Pregunta pregunta) {
-        panelGrafica.removeAll();
         JScrollPane scrollPanel = new JScrollPane();
         JPanel panel = new JPanel(new GridLayout(0, 1));
-        panelGrafica.setLayout(new BorderLayout());
 
         if (pregunta.obtenerCantidadDePerfiles() > 1) {
             for (int i = 0; i < pregunta.obtenerCantidadDePerfiles(); i++) {
-                JPanel p = hacerTabla(pregunta, ((ResultadoPorPerfil)pregunta.obtenerResultadoPorPerfil(i)).getOpciones(), ((ResultadoPorPerfil)pregunta.obtenerResultadoPorPerfil(i)).getPerfil());
+                JPanel p = hacerTabla(pregunta, ((ResultadoPorPerfil) pregunta.obtenerResultadoPorPerfil(i)).getOpciones(), ((ResultadoPorPerfil) pregunta.obtenerResultadoPorPerfil(i)).getPerfil());
                 panel.add(p);
             }
         }
@@ -175,6 +200,9 @@ public class Charts {
 
         scrollPanel.setViewportView(panel);
         scrollPanel.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        JScrollBar vertical = scrollPanel.getVerticalScrollBar();
+        vertical.setValue(0);
+        vertical.setUnitIncrement(30);
         panelGrafica.add(scrollPanel, BorderLayout.CENTER);
         panel.repaint();
         panel.revalidate();
@@ -183,8 +211,7 @@ public class Charts {
     }
 
     private void crearBarChart(Pregunta pregunta) {
-        panelGrafica.removeAll();
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.white);
         panelGrafica.add(panel);
 
@@ -231,8 +258,8 @@ public class Charts {
         plot.setOutlineVisible(false);
 
         ChartPanel barChart = new ChartPanel(chart);
-        //barChart.setBounds(panelGrafica.getVisibleRect());
-        barChart.setPreferredSize(panelGrafica.getSize());
+        barChart.setBounds(panel.getVisibleRect());
+        //barChart.setPreferredSize(panelGrafica.getSize());
         //barChart.setBounds(panel.getVisibleRect());
 
         //Colores de Barras
@@ -299,7 +326,6 @@ public class Charts {
     }
 
     private void crearPieChart(Pregunta pregunta) {
-        panelGrafica.removeAll();
         JTabbedPane tabPanel = new JTabbedPane();
         panelGrafica.add(tabPanel);
 
@@ -313,13 +339,22 @@ public class Charts {
                 JPanel panel = hacerPiePanel(pregunta, pregunta.obtenerResultadoPorPerfil(i).getOpciones());
                 panel.setName(pregunta.obtenerResultadoPorPerfil(i).getPerfil());
                 tabPanel.addTab(panel.getName(), panel);
+                
             }
         }
 
         JPanel panel = hacerPiePanel(pregunta, pregunta.obtenerOpciones());
         panel.setName("Todos");
         tabPanel.addTab(panel.getName(), panel);
+        tabPanel.setFont(new Font("Roboto", 0, 24));
+        tabPanel.addChangeListener(new ChangeListener() {
 
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                tabIndex = ((JTabbedPane)(e.getSource())).getSelectedIndex();
+            }
+        });
+        tabPanel.setSelectedIndex(tabIndex);
         panelGrafica.add(tabPanel, BorderLayout.CENTER);
         panelGrafica.repaint();
         panelGrafica.revalidate();
@@ -350,7 +385,7 @@ public class Charts {
     }
 
     private JPanel hacerPiePanel(Pregunta pregunta, List<Opcion> opciones) {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new BorderLayout());
         panel.setBackground(Color.white);
         DefaultPieDataset data = new DefaultPieDataset();
         // Fuente de Datos
@@ -372,8 +407,8 @@ public class Charts {
         ChartPanel chartPanel = new ChartPanel(chart);
         PiePlot plot = (PiePlot) chart.getPlot();
 
-        chartPanel.setPreferredSize(new Dimension(900, 650));
-        //chartPanel.setBounds(panel.getVisibleRect());
+        chartPanel.setBounds(panel.getBounds());
+
         panel.add(chartPanel);
 
         plot.setLabelGenerator(null);
@@ -408,7 +443,7 @@ public class Charts {
         legend.setPosition(RectangleEdge.RIGHT);
         Font nwfont = new Font("Roboto", 0, 18);
         legend.setItemFont(nwfont);
-        legend.setBorder(0, 0, 0, 0);
+        legend.setFrame(new BlockBorder(0, 0, 0, 90, Color.white));
         legend.setBackgroundPaint(Color.WHITE);
         legend.setItemLabelPadding(new RectangleInsets(8, 8, 8, 0));
         //RectangleInsets padding = new RectangleInsets(5, 5, 5, 5);
@@ -419,21 +454,19 @@ public class Charts {
     }
 
     private JPanel hacerTabla(Pregunta pregunta, List<Opcion> opciones, String perfil) {
-        JPanel panel = new JPanel(new BorderLayout());
+        Tabla panel = new Tabla();
         //Panel completo
         //scrollPanel.setBackground(Color.blue);
-        panel.setBackground(Color.white);
 
         //Título pregunta
         JLabel tituloPregunta = new JLabel("\t" + pregunta.getTitulo() + " (" + perfil + ")");
         tituloPregunta.setFont(new Font("Roboto", 1, 24));
         tituloPregunta.setForeground(Color.black);
         tituloPregunta.setVerticalAlignment(JLabel.CENTER);
-        JPanel panelHeader = new JPanel(new GridLayout(0, 1));
+        JPanel panelHeader = panel.getjPanelHead();
         panelHeader.add(tituloPregunta);
         panelHeader.setOpaque(false);
         panelHeader.setPreferredSize(panelGrafica.getSize());
-        panel.add(panelHeader, BorderLayout.PAGE_START);
 
         //Panel de la tabla
         JPanel tabla = new JPanel(new GridLayout(pregunta.obtenerCantidadDeOpciones() + 2, 3, 5, 5));
@@ -516,25 +549,33 @@ public class Charts {
         p3.add(l3);
         tabla.add(p3);
 
-        panel.add(tabla, BorderLayout.CENTER);
+        panel.getjPanelContent().add(tabla, BorderLayout.CENTER);
 
         //Relleno
         JPanel x = new JPanel(new GridLayout());
         x.setPreferredSize(new Dimension(100, 0));
         x.setBackground(Color.white);
-        panel.add(x, BorderLayout.LINE_START);
+        panel.getjPanelContent().add(x, BorderLayout.LINE_START);
         JPanel y = new JPanel(new GridLayout());
         y.setPreferredSize(new Dimension(100, 0));
         y.setBackground(Color.white);
-        panel.add(y, BorderLayout.LINE_END);
+        panel.getjPanelContent().add(y, BorderLayout.LINE_END);
         JPanel z = new JPanel(new GridLayout());
         z.setBackground(Color.white);
         z.setPreferredSize(new Dimension(0, 40));
-        panel.add(z, BorderLayout.PAGE_END);
+        panel.getjPanelContent().add(z, BorderLayout.PAGE_END);
 
         return panel;
     }
 
+    public JButton getBotonActual() {
+        return botonActual;
+    }
+
+    public int getTabIndex() {
+        return tabIndex;
+    }
+    
     public static class BarRenderer {
 
         private Paint[] color;
@@ -571,5 +612,49 @@ public class Charts {
                 plot.setSectionPaint(keys.get(i), this.color[aInt]);
             }
         }
+    }
+
+    private class Tabla extends JPanel {
+
+        private JPanel jPanelContent;
+        private JPanel jPanelHead;
+
+        public Tabla() {
+            super();
+            jPanelHead = new javax.swing.JPanel();
+            jPanelContent = new javax.swing.JPanel();
+
+            setBackground(new java.awt.Color(255, 255, 255));
+
+            jPanelHead.setBackground(new java.awt.Color(255, 255, 255));
+            jPanelHead.setLayout(new java.awt.GridLayout(0, 1));
+
+            jPanelContent.setBackground(new java.awt.Color(255, 255, 255));
+            jPanelContent.setLayout(new java.awt.BorderLayout());
+
+            javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
+            this.setLayout(layout);
+            layout.setHorizontalGroup(
+                    layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanelHead, javax.swing.GroupLayout.DEFAULT_SIZE, 484, Short.MAX_VALUE)
+                    .addComponent(jPanelContent, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            );
+            layout.setVerticalGroup(
+                    layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                            .addComponent(jPanelHead, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(jPanelContent, javax.swing.GroupLayout.DEFAULT_SIZE, 236, Short.MAX_VALUE))
+            );
+        }
+
+        public JPanel getjPanelContent() {
+            return jPanelContent;
+        }
+
+        public JPanel getjPanelHead() {
+            return jPanelHead;
+        }
+
     }
 }
