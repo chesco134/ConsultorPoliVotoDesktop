@@ -25,18 +25,22 @@ public class Consultor extends javax.swing.JFrame {
     private final int BARCHART = 1;
     private final int TABLE = 2;
     private Charts chart;
+    private boolean bHeader = false;
+    private boolean bBotones = false;
+    private int bGrafica = 0;
+    private Votacion votacion;
     /**
      * Creates new form Consultor
      * @param votacion
      */
     public Consultor(Votacion votacion){
         initComponents();
+        this.votacion = votacion;
         chart = new Charts(votacion, panelGrafica);
         chart.getHeader(panelInfo);
         chart.getBotonesPreguntas(panelBotones);
-        chart.setState(BARCHART);
+        chart.setState(PIECHART);
         setExtendedState(this.getExtendedState() | JFrame.MAXIMIZED_BOTH);
-        chart.getBotonActual().doClick();
     }
 
     /**
@@ -120,8 +124,17 @@ public class Consultor extends javax.swing.JFrame {
 
         panelGrafica.setBackground(new java.awt.Color(255, 255, 255));
 
-        panelGrafica.setLayout(new java.awt.BorderLayout());
-        
+        javax.swing.GroupLayout panelGraficaLayout = new javax.swing.GroupLayout(panelGrafica);
+        panelGrafica.setLayout(panelGraficaLayout);
+        panelGraficaLayout.setHorizontalGroup(
+            panelGraficaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 447, Short.MAX_VALUE)
+        );
+        panelGraficaLayout.setVerticalGroup(
+            panelGraficaLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
         javax.swing.GroupLayout ResultadosLayout = new javax.swing.GroupLayout(Resultados);
         Resultados.setLayout(ResultadosLayout);
         ResultadosLayout.setHorizontalGroup(
@@ -282,15 +295,12 @@ public class Consultor extends javax.swing.JFrame {
         panelLateral.setVisible(false);
         banderaPanelLateral = !banderaPanelLateral;
         chart.setState(BARCHART);
-        chart.getBotonActual().doClick();
     }//GEN-LAST:event_iconoBarrasMouseClicked
 
     private void iconoPastelMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_iconoPastelMouseClicked
         panelLateral.setVisible(false);
         banderaPanelLateral = !banderaPanelLateral;
         chart.setState(PIECHART);
-        chart.getBotonActual().doClick();
-        System.out.println("selected pane: " + chart.getTabIndex());
         
     }//GEN-LAST:event_iconoPastelMouseClicked
 
@@ -298,7 +308,6 @@ public class Consultor extends javax.swing.JFrame {
         panelLateral.setVisible(false);
         banderaPanelLateral = !banderaPanelLateral;
         chart.setState(TABLE);
-        chart.getBotonActual().doClick();
     }//GEN-LAST:event_iconoTablaMouseClicked
 
     public void iniciar() {
