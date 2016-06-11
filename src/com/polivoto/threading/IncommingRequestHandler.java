@@ -20,7 +20,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import com.polivoto.networking.SoapClient;
 import com.polivoto.shared.Opcion;
-import com.polivoto.shared.Pregunta;
 import com.polivoto.shared.ResultadoPorPerfil;
 import com.polivoto.vistas.AnalistaLocal;
 import com.polivoto.vistas.Consultor;
@@ -32,12 +31,10 @@ import java.util.Map;
 import java.util.TreeMap;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import org.inspira.jcapiz.polivoto.pojo.Votacion;
 import org.inspira.polivoto.proveedores.LogProvider;
-import org.inspira.polivoto.proveedores.ProveedorDeMarshalling;
 import org.inspira.polivoto.proveedores.ProveedorDeRecursos;
-import org.inspira.polivoto.proveedores.ProveedorDeRegistroDeVotacion;
 import org.json.JSONArray;
+
 
 /**
  *
@@ -52,6 +49,7 @@ public class IncommingRequestHandler extends Thread {
     private boolean isShowing;
     private String localHost;
     private JFrame mainFrame;
+    private int idVotacion;
 
     public void setAccionesConsultor(JFrame mainFrame, AccionesConsultor accionesConsultor, String remoteHost, boolean useExternalHost) {
         this.mainFrame = mainFrame;
@@ -109,6 +107,7 @@ public class IncommingRequestHandler extends Thread {
                 System.out.println("Llegó: " + smthg + ". From " + socket.getRemoteSocketAddress());
                 JSONObject json = new JSONObject(smthg);
                 String resp;
+                SoapClient sc;
                 resp = "¡Listo!";
                 if (useExternalHost) {
                     remoteHost = ServicioDeIPExterna.obtenerIPServidorRemoto();
@@ -116,7 +115,7 @@ public class IncommingRequestHandler extends Thread {
                 switch (json.getInt("action")) {
                     case 1: // Local server needs to check out the status of one boleta...
                         json.put("action", 8);
-                        SoapClient sc = new SoapClient(json);
+                        sc = new SoapClient(json);
                         sc.setHost(remoteHost);
                         resp = sc.start();
                         break;
@@ -124,46 +123,24 @@ public class IncommingRequestHandler extends Thread {
                         resp = accionesConsultor.consultaBoletaRemota(json.getString("boleta"));
                         break;
                     case 3: // Local server wants to go global.
-                        JSONObject jvotacion = json.getJSONObject("objeto_serializado");
-                        Votacion votacion = ProveedorDeMarshalling.unmarshallMyVotingObject(jvotacion.toString());
                         System.out.println("Inet4Addr " + Inet4Address.getLocalHost().getHostAddress());
-                        ProveedorDeRegistroDeVotacion.LOCAL_ADDR = remoteHost;
                         if (localHost != null) {
                             try {
-                                votacion.setId(ProveedorDeRegistroDeVotacion.solicitudDeRegistro(votacion));
-                            } catch (SOAPException | IOException e) {
-                                resp = "Error en 1";
-                            }
-                            try {
-                                ProveedorDeRegistroDeVotacion.solicitudDeIncorporacionDeHostConsultor(votacion, localHost);
-                            } catch (SOAPException | IOException e) {
-                                resp = "¡Listo!".equals(resp) ? "Error en 3" : resp.concat(", 3");
-                            }
-                            try {
-                                ProveedorDeRegistroDeVotacion.solicitudDeRegistroDelCuestionario(votacion);
-                            } catch (SOAPException | IOException e) {
-                                resp = "¡Listo!".equals(resp) ? "Error en 4" : resp.concat(", 4");
-                            }
-                            try {
-                                JSONObject json1 = new JSONObject();
-                                json1.put("action", 11);
-                                json1.put("host", localHost);
-                                json1.put("idVotacion", votacion.getId());
-                                SoapClient cli = new SoapClient(json1);
+                                json.put("action", 11);
+                                json.put("host", localHost);
+                                SoapClient cli = new SoapClient(json);
                                 cli.setHost(remoteHost);
                                 resp = cli.start();
                             } catch (JSONException | SOAPException e) {
                                 e.printStackTrace();
                             }
-                            json.put("objeto_serializado", ProveedorDeMarshalling.marshallMyVotingObject(votacion));
                         } else {
                             resp = "Servicio por el momento no disponible";
                         }
-                        json.put("resp", resp);
-                        resp = json.toString();
                         break;
                     case 5: // Solicitud de registro sólo de incorporación de Host consultor
                         try {
+                            idVotacion = json.getInt("id_votacion");
                             json.put("action", 3);
                             json.put("host", useExternalHost ? ServicioDeIPExterna.obtenerIPExterna() : Inet4Address.getLocalHost().getHostAddress() + ":8080");
                             SoapClient handler = new SoapClient(json);
@@ -359,6 +336,13 @@ public class IncommingRequestHandler extends Thread {
                         } catch (IOException | SOAPException e) {
                             resp = json.toString();
                         }
+                        break;
+                    case 18:
+                        json.put("action", 14);
+                        json.put("host", localHost);
+                        sc = new SoapClient(json);
+                        sc.setHost(remoteHost);
+                        resp = sc.start();
                         break;
                     default:
                 }
