@@ -102,13 +102,13 @@ public class AnalistaLocal extends JFrame {
                 JPanel panel = new JPanel(new GridLayout(0, 1));
                 panel.setBackground(new Color(255, 255, 255));
                 panelPreguntas.add(panel, "Pregunta " + (i + 1));
-                JLabel lab1 = new JLabel("Pregunta " + (i + 1) + ": " + ((JSONObject) js.get(i)).getString("pregunta"), JLabel.LEFT);
+                JLabel lab1 = new JLabel("Pregunta " + (i + 1) + ": " + ((JSONObject) js.get(i)).getString("pregunta"), JLabel.CENTER);
                 lab1.setFont(new Font("Roboto", 1, 18));
                 lab1.setForeground(new Color(134, 36, 31));
                 panel.add(lab1);
                 JSONArray jarr = ((JSONObject) js.get(i)).getJSONArray("opciones");
                 for (int j = 0; j < jarr.length(); j++) {
-                    JLabel lab2 = new JLabel("Opción " + (j + 1) + ": " + jarr.getString(j), JLabel.LEFT);
+                    JLabel lab2 = new JLabel("Opción " + (j + 1) + ": " + jarr.getString(j), JLabel.CENTER);
                     lab2.setFont(new Font("Roboto", 1, 15));
                     lab2.setForeground(new Color(0, 0, 0));
                     panel.add(lab2);
@@ -308,9 +308,9 @@ public class AnalistaLocal extends JFrame {
             Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(lblmsj_esperando)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, Panel1Layout.createSequentialGroup()
-                .addContainerGap(70, Short.MAX_VALUE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(lbl_cargando)
-                .addContainerGap(70, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         Panel1Layout.setVerticalGroup(
             Panel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -319,7 +319,7 @@ public class AnalistaLocal extends JFrame {
                 .addComponent(lblmsj_esperando, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addComponent(lbl_cargando)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(30, 30, 30))
         );
 
         Panel2.setBackground(new java.awt.Color(255, 255, 255));
