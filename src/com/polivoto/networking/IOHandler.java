@@ -12,6 +12,7 @@ public class IOHandler {
 
     private DataInputStream entrada;
     private DataOutputStream salida;
+    private String allocatedString;
     private byte[] chunk;
     private int rate;
 
@@ -40,7 +41,8 @@ public class IOHandler {
             }
             writeInt(1);
         }
-        //System.out.println("Done reading " + baos.size() + " bytes.");
+        //System.out.println("Done reading $$$$" + baos.toString("UTF-8") + "$$$$");
+        allocatedString = baos.toString("UTF-8");
         chunk = baos.toByteArray();
         baos.close();
         return chunk;
@@ -82,6 +84,10 @@ public class IOHandler {
 
     public void setRate(int rate) {
         this.rate = rate;
+    }
+    
+    public String getAllocatedString(){
+        return allocatedString;
     }
 
     public void close() throws IOException{

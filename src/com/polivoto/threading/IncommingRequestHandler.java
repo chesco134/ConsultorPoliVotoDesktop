@@ -25,6 +25,7 @@ import com.polivoto.vistas.AnalistaLocal;
 import com.polivoto.vistas.Consultor;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,9 @@ public class IncommingRequestHandler extends Thread {
     @Override
     public void run() {
         try {
+            Map<String, Charset> m = Charset.availableCharsets();
+            for(String key : m.keySet())
+                System.out.println("The charset is: " + key + " -> " + m.get(key).name() + ", which for human is: " + m.get(key).displayName());
             server = new ServerSocket(5010);
             while (true) {
                 Socket socket = server.accept();
@@ -103,7 +107,7 @@ public class IncommingRequestHandler extends Thread {
                 salida = new DataOutputStream(socket.getOutputStream());
                 ioHandler = new IOHandler(entrada, salida);
                 byte[] chunk = ioHandler.handleIncommingMessage();
-                String smthg = new String(chunk);
+                String smthg = ioHandler.getAllocatedString();
                 System.out.println("Llegó: " + smthg + ". From " + socket.getRemoteSocketAddress());
                 JSONObject json = new JSONObject(smthg);
                 String resp;
@@ -346,7 +350,7 @@ public class IncommingRequestHandler extends Thread {
                         break;
                     default:
                 }
-                ioHandler.sendMessage(resp.getBytes());
+                ioHandler.sendMessage(resp.getBytes(Charset.forName("UTF-8")));
                 socket.close();
             } catch (SOAPException | IOException | JSONException e) {
                 try {

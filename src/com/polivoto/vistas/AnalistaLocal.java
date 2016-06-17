@@ -23,6 +23,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFrame;
@@ -138,7 +139,7 @@ public class AnalistaLocal extends JFrame {
                             new DataInputStream(socket.getInputStream()),
                             new DataOutputStream(socket.getOutputStream())
                     );
-                    json = new JSONObject(new String(ioHandler.handleIncommingMessage()));
+                    json = new JSONObject(new String(ioHandler.handleIncommingMessage(), Charset.forName("UTF-8")));
                     ioHandler.close();
                     socket.close();
                     switch (json.getInt("action")) {

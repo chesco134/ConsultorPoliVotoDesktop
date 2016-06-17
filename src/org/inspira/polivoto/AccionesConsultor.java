@@ -27,6 +27,7 @@ import com.polivoto.networking.IOHandler;
 import com.polivoto.shared.Opcion;
 import com.polivoto.shared.ResultadoPorPerfil;
 import com.polivoto.shared.Votacion;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import org.inspira.polivoto.proveedores.LogProvider;
@@ -131,7 +132,7 @@ public class AccionesConsultor {
     public synchronized String decipherBytes(byte[] chunk) throws InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
         String resp;
         cipher.init(Cipher.DECRYPT_MODE, secretKey);
-        resp = new String(cipher.doFinal(chunk));
+        resp = new String(cipher.doFinal(chunk), Charset.forName("UTF-8"));
         return resp;
     }
 
@@ -170,7 +171,7 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            detallesDeVotacion = new String(cipher.doFinal(chunk));
+            detallesDeVotacion = new String(cipher.doFinal(chunk), Charset.forName("UTF-8"));
             System.out.println("Recibimos: " + detallesDeVotacion);
             ioHandler.close();
             socket.close();
@@ -199,7 +200,7 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            votacionesDisponibles = new JSONArray(new String(cipher.doFinal(chunk)));
+            votacionesDisponibles = new JSONArray(new String(cipher.doFinal(chunk), Charset.forName("UTF-8")));
             System.out.println("Recibimos: " + votacionesDisponibles);
             ioHandler.close();
             socket.close();
@@ -231,7 +232,7 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            resp = new String(cipher.doFinal(chunk));
+            resp = new String(cipher.doFinal(chunk), Charset.forName("UTF-8"));
             ioHandler.close();
             socket.close();
             json = new JSONObject(resp);
@@ -261,7 +262,7 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            result = new String(cipher.doFinal(chunk));
+            result = new String(cipher.doFinal(chunk), Charset.forName("UTF-8"));
             System.out.println("Comprobando existencia de " + boleta + ": " + result);
             socket.close();
             ioHandler.close();
@@ -299,7 +300,7 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            JSONArray resp = new JSONArray(new String(cipher.doFinal(chunk)));
+            JSONArray resp = new JSONArray(new String(cipher.doFinal(chunk), Charset.forName("UTF-8")));
             System.out.println("Preguntas de votacion actual:\n" + resp);
             socket.close();
             ioHandler.close();
@@ -327,8 +328,10 @@ public class AccionesConsultor {
                 ioHandler.sendMessage(chunk);
                 chunk = ioHandler.handleIncommingMessage();
                 cipher.init(Cipher.DECRYPT_MODE, secretKey);
-                JSONArray resp = new JSONArray(new String(cipher.doFinal(chunk)));
-                System.out.println("Preguntas de votacion actual:\n" + resp);
+                String drogo = new String(cipher.doFinal(chunk), Charset.forName("UTF-8"));
+                System.out.println("Drogo says: " + drogo);
+                JSONArray resp = new JSONArray(drogo);
+                System.out.println("Preguntas de votacion actual:\n" + resp.toString());
                 socket.close();
                 preguntas = new JSONArray();
                 JSONObject row;
@@ -370,7 +373,7 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            result = new JSONArray(new String(cipher.doFinal(chunk)));
+            result = new JSONArray(new String(cipher.doFinal(chunk), Charset.forName("UTF-8")));
             System.out.println("Opciones de \"" + pregunta + "\": " + result.toString());
             ioHandler.close();
             socket.close();
@@ -477,7 +480,7 @@ public class AccionesConsultor {
             ioHandler.sendMessage(chunk);
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
-            json = new JSONObject(new String(cipher.doFinal(chunk)));
+            json = new JSONObject(new String(cipher.doFinal(chunk), Charset.forName("UTF-8")));
             JSONArray jarr = json.getJSONArray("resultados_normal");
             Opcion op;
             int participantesQueRespondieronPregunta = 0;
