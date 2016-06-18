@@ -114,7 +114,6 @@ public class AnalistaLocal extends JFrame {
                     lab2.setForeground(new Color(0, 0, 0));
                     panel.add(lab2);
                 }
-
             } catch (JSONException ex) {
                 Logger.getLogger(AnalistaLocal.class.getName()).log(Level.SEVERE, null, ex);
             }

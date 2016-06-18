@@ -233,6 +233,7 @@ public class AccionesConsultor {
             chunk = ioHandler.handleIncommingMessage();
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
             resp = new String(cipher.doFinal(chunk), Charset.forName("UTF-8"));
+            System.out.println("What came from Android server is: " + resp);
             ioHandler.close();
             socket.close();
             json = new JSONObject(resp);
@@ -340,7 +341,7 @@ public class AccionesConsultor {
                     row.put("pregunta", resp.getString(i));
                     row.put("opciones", consultaOpcionesPregunta(resp.getString(i)));
                     preguntas.put(row);
-                    System.out.println("FIERRO PARIENTE: " + row.toString());
+                    System.out.println(row.toString());
                     totalDePreguntas = i;
                     votacion.agregaPregunta(resp.getString(i));
                 }

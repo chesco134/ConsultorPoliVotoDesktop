@@ -68,9 +68,6 @@ public class IncommingRequestHandler extends Thread {
     @Override
     public void run() {
         try {
-            Map<String, Charset> m = Charset.availableCharsets();
-            for(String key : m.keySet())
-                System.out.println("The charset is: " + key + " -> " + m.get(key).name() + ", which for human is: " + m.get(key).displayName());
             server = new ServerSocket(5010);
             while (true) {
                 Socket socket = server.accept();
