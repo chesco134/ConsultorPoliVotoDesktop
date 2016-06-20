@@ -116,6 +116,7 @@ public class IncommingRequestHandler extends Thread {
                 switch (json.getInt("action")) {
                     case 1: // Local server needs to check out the status of one boleta...
                         json.put("action", 8);
+                        json.put("host", localHost);
                         sc = new SoapClient(json);
                         sc.setHost(remoteHost);
                         resp = sc.start();

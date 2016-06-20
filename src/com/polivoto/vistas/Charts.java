@@ -13,15 +13,14 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Paint;
 import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
@@ -62,19 +61,31 @@ public class Charts {
     private Votacion votacion;
     private JPanel panelGrafica;
     private int state;
-    private JButton botonActual;
+    private Boton botonActual;
     private int tabIndex;
 
     public Charts() {
         state = PIECHART;
-        botonActual = new JButton();
+        botonActual = new Boton() {
+
+            @Override
+            public void botonClicked(Boton e) {
+                System.out.println("Boton " + e.getPregunta());
+            }
+        };
         tabIndex = 0;
     }
 
     public Charts(Votacion votacion) {
         state = PIECHART;
         this.votacion = votacion;
-        botonActual = new JButton();
+        botonActual = new Boton(){
+
+            @Override
+            public void botonClicked(Boton e) {
+                System.out.println("Boton " + e.getPregunta());
+            }
+        };
         tabIndex = 0;
     }
 
@@ -82,14 +93,20 @@ public class Charts {
         this.votacion = votacion;
         this.panelGrafica = panelGrafica;
         state = BARCHART;
-        botonActual = new JButton();
+        botonActual = new Boton() {
+
+            @Override
+            public void botonClicked(Boton e) {
+                System.out.println("Boton " + e.getPregunta());
+            }
+        };
         tabIndex = 0;
     }
 
     public void getHeader(JPanel header) {
         header.removeAll();
-        System.out.println(":)");
-        header.setLayout(new GridLayout(0, 2, 25, 25));
+        GridBagConstraints gridBagConstraints;
+        header.setLayout(new GridBagLayout());
         header.setBackground(Color.white);
         header.setPreferredSize(new Dimension(0, 100));
         JLabel titulo = new JLabel("<html>     <b>Votación: </b>" + votacion.getTitulo() + "</html>");
@@ -105,27 +122,73 @@ public class Charts {
         fechaFin.setVerticalAlignment(JLabel.CENTER);
         fechaInicio.setFont(fuenteNormal);
         fechaInicio.setVerticalAlignment(JLabel.CENTER);
-        header.add(titulo);
-        header.add(fechaInicio);
-        header.add(lugar);
-        header.add(fechaFin);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 15, 5, 5);
+        header.add(titulo, gridBagConstraints);
+        
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 15);
+        header.add(fechaInicio, gridBagConstraints);
+        
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 15, 5, 5);
+        header.add(lugar, gridBagConstraints);
+        
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 3;
+        gridBagConstraints.gridy = 3;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 15);
+        header.add(fechaFin, gridBagConstraints);
+        
         header.repaint();
         header.revalidate();
 
     }
 
     public void getBotonesPreguntas(JPanel botones) {
+        GridBagConstraints gridBagConstraints;
         boolean first = false;
         botones.removeAll();
-        System.out.println(":))");
         JPanel panelRelleno = new JPanel(new BorderLayout(20, 20));
         panelRelleno.setBackground(Color.white);
         JPanel panelContainer = new JPanel(new GridLayout(0, 1, 30, 30));
         panelContainer.setBackground(Color.white);
         botones.setPreferredSize(new Dimension(250, 0));
-        botones.setLayout(new GridLayout(2, 1));
-        botones.add(panelContainer);
-        botones.add(panelRelleno);
+        botones.setLayout(new GridBagLayout());
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        botones.add(panelContainer, gridBagConstraints);
+        gridBagConstraints = new GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.fill = GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 0.9;
+        gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+        botones.add(panelRelleno, gridBagConstraints);
         JLabel labelPreguntas = new JLabel("PREGUNTAS");
         labelPreguntas.setFont(new Font("Roboto", 1, 24));
         labelPreguntas.setHorizontalAlignment(0);
@@ -133,17 +196,16 @@ public class Charts {
         panelContainer.add(labelPreguntas);
 
         for (Pregunta pregunta : votacion.getPreguntas()) {
-            JButton boton = new JButton("<html>" + pregunta.getTitulo() + "</html>");
-            boton.setPreferredSize(new Dimension(200, 0));
-            boton.setHorizontalAlignment(0);
-            boton.addActionListener(new ActionListener() {
+            Boton boton = new Boton("<html><div align=center>" + pregunta.getTitulo() + "</html>") {
 
                 @Override
-                public void actionPerformed(ActionEvent e) {
+                public void botonClicked(Boton e) {
                     crearGrafica(pregunta);
-                    botonActual = (JButton)e.getSource();
+                    botonActual = e;
                 }
-            });
+            };
+            boton.setPreferredSize(new Dimension(200, 0));
+            
             panelContainer.add(boton);
             if(!first){
                 botonActual = boton;
@@ -250,15 +312,17 @@ public class Charts {
 
         //chart.setBackgroundPaint(Color.white);
         chart.getTitle().setFont(new Font("Roboto", 0, 28));
+        
         //chart.addSubtitle(new TextTitle("Titulo jajaja"));
         //chart.setBackgroundPaint(new GradientPaint(0, 0, Color.white, 0, 1000, Color.white));
         CategoryPlot plot = chart.getCategoryPlot();
         plot.setBackgroundPaint(Color.white);
         plot.setRangeGridlinePaint(Color.DARK_GRAY);
         plot.setOutlineVisible(false);
-
+        
         ChartPanel barChart = new ChartPanel(chart);
         barChart.setBounds(panel.getVisibleRect());
+        
         //barChart.setPreferredSize(panelGrafica.getSize());
         //barChart.setBounds(panel.getVisibleRect());
 
@@ -407,7 +471,8 @@ public class Charts {
         ChartPanel chartPanel = new ChartPanel(chart);
         PiePlot plot = (PiePlot) chart.getPlot();
 
-        chartPanel.setBounds(panel.getBounds());
+        Rectangle bounds = panel.getBounds();
+        chartPanel.setBounds(bounds.x, bounds.y, bounds.height, bounds.height);
 
         panel.add(chartPanel);
 
@@ -568,7 +633,7 @@ public class Charts {
         return panel;
     }
 
-    public JButton getBotonActual() {
+    public Boton getBotonActual() {
         return botonActual;
     }
 

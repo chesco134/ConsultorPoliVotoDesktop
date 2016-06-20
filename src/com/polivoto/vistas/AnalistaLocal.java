@@ -12,10 +12,12 @@ import com.polivoto.networking.SoapClient;
 import com.polivoto.shared.Pregunta;
 import com.polivoto.shared.ResultadoPorPerfil;
 import com.polivoto.shared.Votacion;
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Font;
-import java.awt.GridLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.DataInputStream;
@@ -100,20 +102,45 @@ public class AnalistaLocal extends JFrame {
         JSONArray js = accionesConsultor.getPreguntas();
         for (int i = 0; i < js.length(); i++) {
             try {
-                JPanel panel = new JPanel(new GridLayout(0, 1));
+                JPanel panel = new JPanel(new GridBagLayout());
                 panel.setBackground(new Color(255, 255, 255));
                 panelPreguntas.add(panel, "Pregunta " + (i + 1));
                 JLabel lab1 = new JLabel("Pregunta " + (i + 1) + ": " + ((JSONObject) js.get(i)).getString("pregunta"), JLabel.CENTER);
                 lab1.setFont(new Font("Roboto", 1, 18));
                 lab1.setForeground(new Color(134, 36, 31));
-                panel.add(lab1);
+                GridBagConstraints gridBagConstraints = new java.awt.GridBagConstraints();
+                gridBagConstraints.gridx = 0;
+                gridBagConstraints.gridy = 0;
+                gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+                gridBagConstraints.weightx = 0.1;
+                gridBagConstraints.weighty = 0.2;
+                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                panel.add(lab1, gridBagConstraints);
                 JSONArray jarr = ((JSONObject) js.get(i)).getJSONArray("opciones");
                 for (int j = 0; j < jarr.length(); j++) {
                     JLabel lab2 = new JLabel("Opción " + (j + 1) + ": " + jarr.getString(j), JLabel.CENTER);
                     lab2.setFont(new Font("Roboto", 1, 15));
                     lab2.setForeground(new Color(0, 0, 0));
-                    panel.add(lab2);
+                    gridBagConstraints = new java.awt.GridBagConstraints();
+                    gridBagConstraints.gridx = 0;
+                    gridBagConstraints.gridy = j + 1;
+                    gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+                    gridBagConstraints.weightx = 0.1;
+                    gridBagConstraints.weighty = 0.1;
+                    gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                    panel.add(lab2, gridBagConstraints);
                 }
+                
+                JPanel panelRelleno = new JPanel(new BorderLayout(20, 20));
+                panelRelleno.setBackground(Color.white);
+                gridBagConstraints = new GridBagConstraints();
+                gridBagConstraints.gridx = 0;
+                gridBagConstraints.gridy = jarr.length() + 1;
+                gridBagConstraints.fill = GridBagConstraints.BOTH;
+                gridBagConstraints.weightx = 0.1;
+                gridBagConstraints.weighty = 0.9;
+                gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
+                panel.add(panelRelleno, gridBagConstraints);
             } catch (JSONException ex) {
                 Logger.getLogger(AnalistaLocal.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -231,7 +258,6 @@ public class AnalistaLocal extends JFrame {
         lblvotos_totales = new javax.swing.JLabel();
         panelVotando = new javax.swing.JPanel();
         panelMain = new javax.swing.JPanel();
-        jLabel8 = new javax.swing.JLabel();
         panelEstado = new javax.swing.JPanel();
         encabezado = new javax.swing.JLabel();
         panelPreguntas = new javax.swing.JPanel();
@@ -388,7 +414,7 @@ public class AnalistaLocal extends JFrame {
             .addGroup(jPanel7Layout.createSequentialGroup()
                 .addGap(10, 10, 10)
                 .addComponent(lblvotos_totales, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(206, Short.MAX_VALUE))
+                .addContainerGap(567, Short.MAX_VALUE))
         );
         jPanel7Layout.setVerticalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -408,7 +434,7 @@ public class AnalistaLocal extends JFrame {
                     .addComponent(jPanel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(panelVotosTotalesLayout.createSequentialGroup()
                         .addComponent(lbl_votos_totales)
-                        .addGap(0, 389, Short.MAX_VALUE)))
+                        .addGap(0, 750, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         panelVotosTotalesLayout.setVerticalGroup(
@@ -422,7 +448,11 @@ public class AnalistaLocal extends JFrame {
         );
 
         gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 0;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         panelPrincipal.add(panelVotosTotales, gridBagConstraints);
 
@@ -435,15 +465,12 @@ public class AnalistaLocal extends JFrame {
         panelMain.setLayout(panelMainLayout);
         panelMainLayout.setHorizontalGroup(
             panelMainLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 794, Short.MAX_VALUE)
+            .addGap(0, 0, Short.MAX_VALUE)
         );
         panelMainLayout.setVerticalGroup(
             panelMainLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGap(0, 359, Short.MAX_VALUE)
         );
-
-        jLabel8.setFont(new java.awt.Font("Roboto", 1, 14)); // NOI18N
-        jLabel8.setText("Preguntas");
 
         panelEstado.setBackground(new java.awt.Color(255, 255, 255));
 
@@ -474,7 +501,7 @@ public class AnalistaLocal extends JFrame {
         );
         panelPreguntasLayout.setVerticalGroup(
             panelPreguntasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 97, Short.MAX_VALUE)
+            .addGap(0, 390, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout panelVotandoLayout = new javax.swing.GroupLayout(panelVotando);
@@ -488,10 +515,6 @@ public class AnalistaLocal extends JFrame {
             .addGroup(panelVotandoLayout.createSequentialGroup()
                 .addComponent(panelMain, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
-            .addGroup(panelVotandoLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel8)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, panelVotandoLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(panelPreguntas, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -501,9 +524,7 @@ public class AnalistaLocal extends JFrame {
             .addGroup(panelVotandoLayout.createSequentialGroup()
                 .addGap(7, 7, 7)
                 .addComponent(panelEstado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(5, 5, 5)
-                .addComponent(jLabel8)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGap(30, 30, 30)
                 .addComponent(panelPreguntas, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(panelMain, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -515,8 +536,8 @@ public class AnalistaLocal extends JFrame {
         gridBagConstraints.gridy = 0;
         gridBagConstraints.gridheight = 3;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
-        gridBagConstraints.weightx = 0.1;
-        gridBagConstraints.weighty = 0.1;
+        gridBagConstraints.weightx = 1.0;
+        gridBagConstraints.weighty = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         panelPrincipal.add(panelVotando, gridBagConstraints);
 
@@ -555,7 +576,7 @@ public class AnalistaLocal extends JFrame {
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel8Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(lblporcentaje, javax.swing.GroupLayout.DEFAULT_SIZE, 293, Short.MAX_VALUE)
+                .addComponent(lblporcentaje, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(34, 34, 34)
                 .addComponent(pnlgrafica, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(22, 22, 22))
@@ -580,7 +601,7 @@ public class AnalistaLocal extends JFrame {
                     .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(panelPorcentajeLayout.createSequentialGroup()
                         .addComponent(lbl_porcentaje)
-                        .addGap(0, 204, Short.MAX_VALUE)))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         panelPorcentajeLayout.setVerticalGroup(
@@ -599,6 +620,8 @@ public class AnalistaLocal extends JFrame {
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 1;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         panelPrincipal.add(panelPorcentaje, gridBagConstraints);
 
@@ -675,7 +698,10 @@ public class AnalistaLocal extends JFrame {
 
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
+        gridBagConstraints.gridy = 2;
         gridBagConstraints.fill = java.awt.GridBagConstraints.BOTH;
+        gridBagConstraints.weightx = 0.1;
+        gridBagConstraints.weighty = 1.0;
         gridBagConstraints.insets = new java.awt.Insets(5, 5, 5, 5);
         panelPrincipal.add(panelTimer, gridBagConstraints);
 
@@ -691,7 +717,7 @@ public class AnalistaLocal extends JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(panelPrincipal, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(panelPrincipal, javax.swing.GroupLayout.DEFAULT_SIZE, 902, Short.MAX_VALUE))
         );
 
         pack();
@@ -775,7 +801,6 @@ public class AnalistaLocal extends JFrame {
     private javax.swing.JLabel encabezado;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel8;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
